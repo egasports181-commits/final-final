@@ -1,27 +1,28 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl =
+  process.env.DATABASE_URL || "postgresql://postgres:postgres@127.0.0.1:5432/app_db";
 
-if (!databaseUrl) {
-  console.warn("[upflit] DATABASE_URL environment variable is missing!");
+if (!process.env.DATABASE_URL) {
+  console.warn(
+    "[upflit] DATABASE_URL is not set. Falling back to postgresql://postgres:postgres@127.0.0.1:5432/app_db",
+  );
 }
 
 const globalForDb = globalThis as typeof globalThis & {
   __upflitPool?: Pool;
 };
 
-// Neon DB Serverless-এর জন্য SSL ও Connection Pool Settings (init.ts-এর সাথে সামঞ্জস্যপূর্ণ)
+const needsSsl =
+  /sslmode=require/.test(databaseUrl) || process.env.DATABASE_SSL === "true";
+
 export const pool =
   globalForDb.__upflitPool ??
   new Pool({
-    connectionString:
-      databaseUrl ||
-      "postgresql://postgres:postgres@127.0.0.1:5432/app_db",
-    ssl: databaseUrl ? { rejectUnauthorized: false } : undefined,
-    max: 1, // Serverless-এ কানেকশন ঝুলন্ত হওয়া আটকাবে
-    connectionTimeoutMillis: 10000,
-    idleTimeoutMillis: 10000,
+    connectionString: databaseUrl,
+    ssl: needsSsl ? { rejectUnauthorized: false } : undefined,
+    max: 8,
   });
 
 if (process.env.NODE_ENV !== "production") {
