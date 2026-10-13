@@ -1,5 +1,5 @@
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import { Pool } from "@neondatabase/serverless";
 
 const databaseUrl =
   process.env.DATABASE_URL || "postgresql://postgres:postgres@127.0.0.1:5432/app_db";
@@ -10,8 +10,20 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Serverless (Vercel)-er jonno Neon HTTP client setup
-const sql = neon(databaseUrl);
+const globalForDb = globalThis as typeof globalThis & {
+  __upflitPool?: Pool;
+};
 
-// Drizzle database instance export
-export const db = drizzle(sql);
+// Neon Serverless Pool instance (Vercel-এ Timeout হওয়া থেকে রক্ষা করে)
+export const pool =
+  globalForDb.__upflitPool ??
+  new Pool({
+    connectionString: databaseUrl,
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  globalForDb.__upflitPool = pool;
+}
+
+// Drizzle instance with Neon Serverless Pool
+export const db = drizzle(pool);
