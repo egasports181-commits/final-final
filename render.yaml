@@ -1,0 +1,28 @@
+# Render Blueprint — deploys the Upflit web service + a managed PostgreSQL database.
+# In Render: New + → Blueprint → select your repository.
+services:
+  - type: web
+    name: upflit
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: upflit-db
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ADMIN_EMAIL
+        value: admin@upflit.com
+      - key: ADMIN_PASSWORD
+        sync: false # you will be asked for this value when creating the blueprint
+
+databases:
+  - name: upflit-db
+    plan: basic-256mb
+    databaseName: upflit
