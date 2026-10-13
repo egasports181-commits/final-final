@@ -1,29 +1,21 @@
-import { drizzle } from "drizzle-orm/neon-serverless";
-import { Pool } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
 
 const databaseUrl =
   process.env.DATABASE_URL || "postgresql://postgres:postgres@127.0.0.1:5432/app_db";
 
 if (!process.env.DATABASE_URL) {
-  console.warn(
-    "[upflit] DATABASE_URL is not set. Falling back to default local URL."
-  );
+  console.warn("[upflit] DATABASE_URL is not set in Environment Variables.");
 }
 
-const globalForDb = globalThis as typeof globalThis & {
-  __upflitPool?: Pool;
+// Neon HTTP client (Vercel Serverless-এ ১০০% দ্রুত ও টাইমাউট-ফ্রি)
+export const sql = neon(databaseUrl);
+
+// Drizzle DB Instance
+export const db = drizzle({ client: sql });
+
+// init.ts-এর জন্য pool সাপোর্ট রাখা হলো যাতে বিল্ড এরর না হয়
+export const pool = {
+  query: (queryText: string, params?: any[]) => sql(queryText, params),
+  end: async () => {},
 };
-
-// Neon Serverless Pool instance (Vercel-এ Timeout হওয়া থেকে রক্ষা করে)
-export const pool =
-  globalForDb.__upflitPool ??
-  new Pool({
-    connectionString: databaseUrl,
-  });
-
-if (process.env.NODE_ENV !== "production") {
-  globalForDb.__upflitPool = pool;
-}
-
-// Drizzle instance with Neon Serverless Pool
-export const db = drizzle(pool);
