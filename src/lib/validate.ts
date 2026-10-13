@@ -105,17 +105,22 @@ export function validateInquiry(input: unknown) {
   const o = obj(input);
   const name = str(o.name, 120);
   const email = str(o.email, 200);
-  const message = str(o.message, 5000);
+  const message = str(o.message || o.projectDetails, 5000);
+  const packageName = str(o.packageName || o.package, 80);
+  const service = str(o.service, 120);
+  const budget = str(o.budget, 80);
+
   if (!name) throw new ValidationError("Please enter your name.");
   if (!EMAIL.test(email)) throw new ValidationError("Please enter a valid email address.");
   if (message.length < 10) throw new ValidationError("Please tell us a little more (at least 10 characters).");
+
   return {
     name,
     email,
     message,
-    packageName: str(o.packageName, 80),
-    service: str(o.service, 120),
-    budget: str(o.budget, 80),
+    packageName: packageName || "Not specified",
+    service: service || "Not specified",
+    budget: budget || "Not specified",
   };
 }
 

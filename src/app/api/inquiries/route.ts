@@ -20,10 +20,15 @@ export async function POST(req: Request) {
 
   try {
     const v = validateInquiry(body);
-    await ensureDb();
-    await db.insert(inquiries).values(v);
 
-    // Resend email notification (Safe Initialization for Vercel Build)
+    try {
+      await ensureDb();
+      await db.insert(inquiries).values(v);
+    } catch (dbErr) {
+      console.error("DB Save Error:", dbErr);
+    }
+
+    // Resend email notification
     const apiKey = process.env.RESEND_API_KEY;
     if (apiKey) {
       try {
@@ -31,15 +36,20 @@ export async function POST(req: Request) {
         await resend.emails.send({
           from: "Upflit Contact <onboarding@resend.dev>",
           to: "egasports181@gmail.com",
-          subject: `New Inquiry from ${v.name || "Website Visitor"}`,
+          subject: `🛒 New Client Order: ${v.packageName} from ${v.name}`,
           html: `
-            <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
-              <h2 style="color: #7357FF;">New Inquiry Received (Upflit)</h2>
-              <p><strong>Name:</strong> ${v.name || "N/A"}</p>
-              <p><strong>Email:</strong> ${v.email || "N/A"}</p>
-              <p><strong>Message:</strong></p>
-              <blockquote style="background: #f9f9f9; padding: 12px; border-left: 4px solid #7357FF; margin: 0;">
-                ${v.message || "N/A"}
+            <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 8px; max-width: 600px;">
+              <h2 style="color: #7357FF; margin-top: 0;">New Client Order (Upflit)</h2>
+              <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;" />
+              <p><strong>Client Name:</strong> ${v.name}</p>
+              <p><strong>Email:</strong> <a href="mailto:${v.email}">${v.email}</a></p>
+              <p><strong>Package:</strong> ${v.packageName}</p>
+              <p><strong>Service:</strong> ${v.service}</p>
+              <p><strong>Budget:</strong> ${v.budget !== "Not specified" ? `$${v.budget}` : "Not specified"}</p>
+              <br />
+              <p><strong>Project Details / Message:</strong></p>
+              <blockquote style="background: #f9f9f9; padding: 12px; border-left: 4px solid #7357FF; margin: 0; border-radius: 4px; white-space: pre-wrap;">
+                ${v.message}
               </blockquote>
             </div>
           `,
