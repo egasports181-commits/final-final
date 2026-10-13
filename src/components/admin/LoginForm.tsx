@@ -43,13 +43,31 @@ export function LoginForm({ dbOk, usingDefault }: { dbOk: boolean; usingDefault:
           </p>
         )}
         <div className="mt-6 grid gap-4">
-          <label>
+          <label htmlFor="email">
             <span className="a-label">Email</span>
-            <input className="a-input" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            <input 
+              id="email"
+              name="email"
+              className="a-input" 
+              type="email" 
+              autoComplete="username" 
+              required 
+              value={email} 
+              onChange={(e) => setEmail(e.target.value)} 
+            />
           </label>
-          <label>
+          <label htmlFor="password">
             <span className="a-label">Password</span>
-            <input className="a-input" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+            <input 
+              id="password"
+              name="password"
+              className="a-input" 
+              type="password" 
+              autoComplete="current-password" 
+              required 
+              value={password} 
+              onChange={(e) => setPassword(e.target.value)} 
+            />
           </label>
           {error && <p className="rounded-xl bg-[#fef2f2] p-3 text-sm text-[#9b1c1c]" role="alert">{error}</p>}
           <button className="a-btn a-btn-primary justify-center py-3" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
