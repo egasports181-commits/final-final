@@ -19,6 +19,7 @@ import { getSettings } from "@/lib/data";
 import { themeCss } from "@/lib/theme";
 import { Analytics } from "@vercel/analytics/next";
 import FloatingContact from "@/components/site/FloatingContact";
+import BookingButton from "@/components/site/BookingButton";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +66,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         {children}
         <Analytics />
         <FloatingContact />
+        <BookingButton />
       </body>
     </html>
   );
