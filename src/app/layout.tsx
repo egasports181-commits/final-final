@@ -17,6 +17,7 @@ import "@fontsource/manrope/700.css";
 import "./globals.css";
 import { getSettings } from "@/lib/data";
 import { themeCss } from "@/lib/theme";
+import { Analytics } from "@vercel/analytics/next"; // নতুন যোগ করা হয়েছে
 
 export const dynamic = "force-dynamic";
 
@@ -59,7 +60,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <head>
         <style id="upflit-theme" dangerouslySetInnerHTML={{ __html: themeCss(settings) }} />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Analytics /> {/* এখানে Analytics কম্পোনেন্ট বসানো হয়েছে */}
+      </body>
     </html>
   );
 }
