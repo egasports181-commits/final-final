@@ -4,7 +4,7 @@ import React from "react";
 import { MessageCircle } from "lucide-react";
 
 export default function FloatingContact() {
-  const whatsappNumber = "8801XXXXXXXXX"; // apnar number din
+  const whatsappNumber = "8801776768082"; // apnar number din
   const message = encodeURIComponent("Hi, I want to discuss a project with you!");
 
   return (
