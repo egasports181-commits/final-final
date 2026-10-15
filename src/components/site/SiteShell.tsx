@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import type { PublicData } from "@/lib/data";
 import type { PricingData, ServiceData } from "@/lib/types";
 import { Header } from "./Header";
-import { AmbientMotion } from "./AmbientMotion";
 import { Footer } from "./Sections";
 import { Cursor, InquiryModal, RevealObserver } from "./client";
 
@@ -17,7 +16,6 @@ export function SiteShell({ data, children }: { data: PublicData; children: Reac
   const { packages, services } = inquiryOptions(data);
   return (
     <>
-      <AmbientMotion />
       <Header settings={s} />
       <main className="page-in">{children}</main>
       <Footer s={s} />
