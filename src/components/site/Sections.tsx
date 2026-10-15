@@ -7,6 +7,7 @@ import { LogoMark, Logo } from "./Logo";
 import { ArrowUpRight, Check, Mail, Phone, Pin, Plus, ServiceIcon, SocialIcon } from "./icons";
 import { InquiryForm, PackageButton, PortfolioGrid } from "./client";
 import { ProjectImageView } from "./ProjectImageView";
+import { PricingSectionClient } from "./PricingSectionClient";
 
 export function SectionHead({
   cfg,
@@ -181,77 +182,7 @@ export function ServicesSection({ cfg, index, items }: { cfg: SectionConfig; ind
 
 /* ---------- Pricing ---------- */
 export function PricingSection({ cfg, index, items }: { cfg: SectionConfig; index: number; items: Item[] }) {
-  if (!items.length) return null;
-  const cols = items.length >= 3 ? "lg:grid-cols-3" : items.length === 2 ? "md:grid-cols-2" : "";
-  return (
-    <section id="pricing" className="section-y relative overflow-hidden bg-[var(--c-dark)] text-white">
-      <div className="pointer-events-none absolute -right-40 top-20 h-[30rem] w-[30rem] rounded-full bg-[var(--c-primary)] opacity-25 blur-[120px]" />
-      <div className="container-x relative">
-        <SectionHead cfg={cfg} index={index} />
-        <div className={`grid items-stretch gap-5 ${cols}`}>
-          {items.map((it, i) => {
-            const d = it.data as unknown as PricingData;
-            const numeric = /\d/.test(d.price);
-            return (
-              <article
-                key={it.id}
-                className={`reveal relative flex flex-col p-7 md:p-8 ${d.featured ? "brand-gradient grain shadow-[0_40px_80px_-30px_rgba(233,59,1,.6)] lg:-translate-y-4" : "glass-dark"}`}
-                style={{ borderRadius: "var(--radius)", ["--d" as string]: `${i * 0.08}s` }}
-              >
-                <div className="relative z-10 flex flex-1 flex-col">
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="f-heading text-xl font-medium">{d.name}</h3>
-                    {d.featured && <span className="rounded-full bg-white px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--c-primary)]">Popular</span>}
-                  </div>
-                  <p className={`mt-2 text-sm ${d.featured ? "text-white/90" : "text-white/60"}`}>{d.description}</p>
-                  <div className="mt-7 flex items-baseline gap-2">
-                    {numeric && <span className="text-sm opacity-70">{d.currency === "USD" ? "$" : "৳"}</span>}
-                    <span className="t-price">{d.price || "—"}</span>
-                    {numeric && <span className="text-xs opacity-60">{d.currency} · starting</span>}
-                  </div>
-                  <div className={`my-6 h-px ${d.featured ? "bg-white/30" : "bg-white/10"}`} />
-                  <ul className="grid gap-3 text-sm">
-                    {d.deliverables.map((x, k) => (
-                      <li key={k} className="flex gap-3">
-                        <Check size={16} className={`mt-0.5 shrink-0 ${d.featured ? "" : "text-[var(--c-bright)]"}`} />
-                        {x}
-                      </li>
-                    ))}
-                  </ul>
-                  <dl className="mt-6 grid grid-cols-2 gap-3 text-xs">
-                    <div className={`rounded-2xl p-3 ${d.featured ? "bg-black/15" : "bg-white/5"}`}>
-                      <dt className="opacity-60">Revisions</dt>
-                      <dd className="mt-1 font-medium">{d.revisions || "—"}</dd>
-                    </div>
-                    <div className={`rounded-2xl p-3 ${d.featured ? "bg-black/15" : "bg-white/5"}`}>
-                      <dt className="opacity-60">Delivery</dt>
-                      <dd className="mt-1 font-medium">{d.delivery || "—"}</dd>
-                    </div>
-                  </dl>
-                  {d.addons.length > 0 && (
-                    <div className="mt-5">
-                      <div className="eyebrow mb-2 opacity-60">Add-ons</div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {d.addons.map((a, k) => (
-                          <span key={k} className="rounded-full border border-white/20 px-2.5 py-1 text-[0.7rem]">{a}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div className="mt-auto pt-8">
-                    <PackageButton name={d.name} label={d.ctaText || "Get started"} featured={d.featured} />
-                  </div>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-        <p className="reveal mt-8 text-center text-xs text-white/45">
-          Prices are starting points. Final quotes depend on scope. No payment is taken on this website.
-        </p>
-      </div>
-    </section>
-  );
+  return <PricingSectionClient cfg={cfg} index={index} items={items} />;
 }
 
 /* ---------- About ---------- */

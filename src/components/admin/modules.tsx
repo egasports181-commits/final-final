@@ -103,6 +103,7 @@ const ITEM_CONFIG: Record<ItemKind, { title: string; desc: string; fields: Field
     title: "Pricing",
     desc: "Packages are starting points, not payment. CTA buttons open an inquiry form with the package pre-selected.",
     fields: [
+      { key: "category", label: "Category (e.g. YouTube Thumbnail, Social Media, Flyer)", type: "text" },
       { key: "name", label: "Package name", type: "text" },
       { key: "price", label: "Price (e.g. 4,999 or 'Let's talk')", type: "text" },
       { key: "currency", label: "Currency", type: "currency" },
@@ -115,7 +116,7 @@ const ITEM_CONFIG: Record<ItemKind, { title: string; desc: string; fields: Field
       { key: "featured", label: "Featured package (highlighted)", type: "bool" },
     ],
     label: (d) => `${d.name || "Untitled"} — ${d.currency === "USD" ? "$" : "৳"}${d.price || ""}`,
-    blank: { name: "New package", price: "0", currency: "BDT", description: "", deliverables: [], revisions: "", delivery: "", addons: [], ctaText: "Get Started", featured: false },
+    blank: { category: "YouTube Thumbnail", name: "New package", price: "0", currency: "BDT", description: "", deliverables: [], revisions: "", delivery: "", addons: [], ctaText: "Get Started", featured: false },
   },
   faq: {
     title: "FAQs",
