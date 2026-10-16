@@ -1,4 +1,6 @@
 
+"use client";
+
 /* eslint-disable @next/next/no-img-element */
 import { frameStyle, imgStyle, type ProjectImage } from "@/lib/image";
 
@@ -13,10 +15,6 @@ type Props = {
   eager?: boolean;
 };
 
-/**
- * Displays portfolio images with basic protection against casual copying.
- * This cannot prevent screenshots or extraction through browser developer tools.
- */
 export function ProjectImageView({
   image,
   forceAspect,
