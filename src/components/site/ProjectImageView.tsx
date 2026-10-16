@@ -12,6 +12,9 @@ type Props = {
   eager?: boolean;
 };
 
+/** Displays portfolio previews with basic save/drag friction and a subtle brand watermark.
+ * This discourages casual copying; it cannot prevent screenshots or extraction from browser tools.
+ */
 export function ProjectImageView({ image, forceAspect, forceFit, frameHeight, radius, className = "", alt, eager }: Props) {
   if (!image) {
     return (
@@ -23,32 +26,36 @@ export function ProjectImageView({ image, forceAspect, forceFit, frameHeight, ra
       </div>
     );
   }
-
-  // ইমেজের নিজস্ব আসল অ্যাসপেক্ট বা ডিসপ্লে সেটিংস ব্যবহার করবে
   const style = frameStyle(image, { forceAspect, defaultRadius: radius, ignoreHeight: !!forceAspect });
-
   if (frameHeight && frameHeight > 0) {
     style.height = frameHeight;
     style.aspectRatio = "auto";
   }
-
   if (forceAspect) style.width = "100%";
-
-  // contain এর বদলে cover জোরপূর্বক নিশ্চিত করা যেন কালো বার না আসে
-  const display = {
-    ...image.display,
-    fit: forceFit || (image.display.fit === "contain" ? "cover" : image.display.fit),
-  };
-
+  const display = forceFit ? { ...image.display, fit: forceFit } : image.display;
   return (
-    <div className={`p-frame ${className}`} style={style}>
+    <div
+      className={`p-frame relative overflow-hidden select-none ${className}`}
+      style={style}
+      onContextMenu={(event) => event.preventDefault()}
+      onDragStart={(event) => event.preventDefault()}
+    >
       <img
         src={image.url}
         alt={alt ?? image.alt ?? ""}
         loading={eager ? "eager" : "lazy"}
         decoding="async"
-        style={imgStyle(display)}
+        draggable={false}
+        onContextMenu={(event) => event.preventDefault()}
+        onDragStart={(event) => event.preventDefault()}
+        style={{ ...imgStyle(display), userSelect: "none", WebkitUserDrag: "none" }}
       />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-3 right-3 rounded-md border border-white/20 bg-black/35 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.2em] text-white/65 backdrop-blur-[2px]"
+      >
+        UPFLIT · PORTFOLIO
+      </span>
     </div>
   );
 }
