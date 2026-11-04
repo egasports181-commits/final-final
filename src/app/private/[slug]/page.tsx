@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { getPublicData } from "@/lib/data";
 import { DEFAULT_SETTINGS } from "@/lib/settings-defaults";
 import { SiteShell, inquiryOptions } from "@/components/site/SiteShell";
-import { PortfolioSection, ContactSection } from "@/components/site/Sections";
+import { ContactSection } from "@/components/site/Sections";
+import { PrivatePortfolioGrid } from "@/components/private-portfolio/PrivatePortfolioGrid";
 
 export const dynamic = "force-dynamic";
 
@@ -13,10 +14,7 @@ export const metadata: Metadata = {
   robots: {
     index: false,
     follow: false,
-    googleBot: {
-      index: false,
-      follow: false,
-    },
+    googleBot: { index: false, follow: false },
   },
 };
 
@@ -42,15 +40,12 @@ export default async function PrivatePortfolioPage({ params }: Props) {
     data.settings.sections.find((section) => section.id === "contact") ??
     DEFAULT_SETTINGS.sections.find((section) => section.id === "contact")!;
 
-  // Keep the normal site shell and branding, but limit this page's navigation
-  // to the contact section because the other homepage sections are not present.
+  // Reuse the existing site shell, but only show navigation to the contact
+  // section because the other homepage sections are not part of this page.
   const pageSettings = {
     ...data.settings,
     nav: [{ label: "Contact", href: "#contact" }],
-    portfolio: {
-      ...data.settings.portfolio,
-      showFilters: true,
-    },
+    portfolio: { ...data.settings.portfolio, showFilters: true },
   };
   const pageData = { ...data, settings: pageSettings };
 
@@ -68,13 +63,29 @@ export default async function PrivatePortfolioPage({ params }: Props) {
         </div>
       </section>
 
-      <PortfolioSection
-        cfg={portfolioCfg}
-        index={1}
-        s={pageSettings}
-        projects={data.projects}
-        categories={data.categories}
-      />
+      <section id="portfolio" className="section-y bg-[var(--c-light)] text-[#080808]">
+        <div className="container-x">
+          <div className="reveal mb-12 grid gap-6 md:mb-16 md:grid-cols-[1fr_auto] md:items-end">
+            <div>
+              <div className="eyebrow mb-4 flex items-center gap-3 text-black/55">
+                <span className="text-[var(--c-primary)]">01/</span>
+                {portfolioCfg.eyebrow}
+              </div>
+              <h2 className="t-section text-[#080808]">{portfolioCfg.title}</h2>
+            </div>
+            {portfolioCfg.subtitle && (
+              <p className="t-lead max-w-md text-black/60 md:text-right">{portfolioCfg.subtitle}</p>
+            )}
+          </div>
+          <div className="reveal">
+            <PrivatePortfolioGrid
+              projects={data.projects}
+              categories={data.categories}
+              layout={pageSettings.portfolio}
+            />
+          </div>
+        </div>
+      </section>
 
       <ContactSection
         cfg={contactCfg}
