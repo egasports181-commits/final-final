@@ -29,13 +29,17 @@ export function PrivatePortfolioGrid({ projects, categories, layout }: Props) {
   const categoryName = (id: number | null) =>
     categories.find((category) => category.id === id)?.name ?? "Creative Work";
 
-  const activeImages = activeProject
-    ? activeProject.gallery.length
-      ? activeProject.gallery
-      : activeProject.cover
-        ? [activeProject.cover]
-        : []
-    : [];
+  const activeImages = useMemo(
+    () =>
+      activeProject
+        ? activeProject.gallery.length
+          ? activeProject.gallery
+          : activeProject.cover
+            ? [activeProject.cover]
+            : []
+        : [],
+    [activeProject],
+  );
 
   useEffect(() => {
     if (!activeProject) return;
@@ -54,7 +58,7 @@ export function PrivatePortfolioGrid({ projects, categories, layout }: Props) {
       document.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = "";
     };
-  }, [activeProject, activeImages.length]);
+  }, [activeProject, activeImages]);
 
   function openProject(project: Project) {
     setActiveProject(project);
