@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Category, Project } from "@/lib/types";
 import type { SiteSettings } from "@/lib/settings-defaults";
 import { ProjectImageView } from "@/components/site/ProjectImageView";
-import { ArrowLeft, ArrowRight, Close } from "@/components/site/icons";
+import { ArrowLeft, Close } from "@/components/site/icons";
 
 type Props = {
   projects: Project[];
@@ -213,7 +213,7 @@ export function PrivatePortfolioGrid({ projects, categories, layout }: Props) {
                         onClick={() => setImageIndex((current) => (current + 1) % activeImages.length)}
                         className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm hover:bg-white/10"
                       >
-                        Next <ArrowRight size={16} />
+                        Next →
                       </button>
                     </div>
                   )}
