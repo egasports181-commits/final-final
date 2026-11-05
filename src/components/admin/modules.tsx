@@ -31,7 +31,7 @@ import {
 export type ModuleId =
   | "dashboard" | "projects" | "categories" | "layout" | "services" | "pricing" | "hero" | "sections" | "media"
   | "typography" | "appearance" | "faqs" | "testimonials" | "contact" | "social" | "navigation" | "seo" | "brand"
-  | "inquiries" | "account";
+  | "inquiries" | "account" | "privatePortfolio";
 
 /* =============== Dashboard =============== */
 export function Dashboard({ projects, items, inquiries, go }: { projects: Project[]; items: Item[]; inquiries: Inquiry[]; go: (m: ModuleId) => void }) {
