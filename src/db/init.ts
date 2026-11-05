@@ -49,6 +49,16 @@ CREATE TABLE IF NOT EXISTS media (
   data bytea NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+CREATE TABLE IF NOT EXISTS private_portfolios (
+  id serial PRIMARY KEY,
+  slug text NOT NULL UNIQUE,
+  title text NOT NULL DEFAULT '',
+  description text NOT NULL DEFAULT '',
+  images jsonb NOT NULL DEFAULT '[]'::jsonb,
+  published boolean NOT NULL DEFAULT true,
+  sort_order integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 CREATE TABLE IF NOT EXISTS inquiries (
   id serial PRIMARY KEY,
   name text NOT NULL,

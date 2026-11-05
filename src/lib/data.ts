@@ -1,10 +1,10 @@
 import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { ensureDb } from "@/db/init";
-import { categories, items, projects, settings } from "@/db/schema";
+import { categories, items, projects, settings, privatePortfolios } from "@/db/schema";
 import { DEFAULT_SETTINGS, sanitizeSettings, type SiteSettings } from "./settings-defaults";
 import { sanitizeImage } from "./image";
-import type { Category, Item, ItemKind, Project } from "./types";
+import type { Category, Item, ItemKind, Project, PrivatePortfolio } from "./types";
 
 export function normalizeProject(row: typeof projects.$inferSelect): Project {
   const gallery = Array.isArray(row.gallery) ? row.gallery : [];
@@ -96,6 +96,32 @@ export async function getProjectBySlug(slug: string) {
     const all = (await getAllProjects()).filter((p) => p.published);
     return { project, categories: cats, all };
   } catch {
+    return null;
+  }
+}
+
+
+export async function getPrivatePortfolioBySlug(slug: string): Promise<PrivatePortfolio | null> {
+  try {
+    await ensureDb();
+    const rows = await db.select().from(privatePortfolios).where(eq(privatePortfolios.slug, slug));
+    const row = rows[0];
+    if (!row || !row.published) return null;
+    const images = Array.isArray(row.images)
+      ? row.images.map((image) => sanitizeImage(image, "16:9")).filter((image): image is NonNullable<typeof image> => !!image)
+      : [];
+    return {
+      id: row.id,
+      slug: row.slug,
+      title: row.title,
+      description: row.description,
+      images,
+      published: row.published,
+      sortOrder: row.sortOrder,
+      createdAt: row.createdAt.toISOString(),
+    };
+  } catch (err) {
+    console.error("[upflit] Could not load private portfolio:", (err as Error).message);
     return null;
   }
 }

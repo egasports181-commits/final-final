@@ -26,6 +26,17 @@ export type Project = {
   sortOrder: number;
 };
 
+export type PrivatePortfolio = {
+  id: number;
+  slug: string;
+  title: string;
+  description: string;
+  images: ProjectImage[];
+  published: boolean;
+  sortOrder: number;
+  createdAt: string;
+};
+
 export type ItemKind = "service" | "pricing" | "faq" | "testimonial";
 
 export type ServiceData = { title: string; description: string; icon: string };

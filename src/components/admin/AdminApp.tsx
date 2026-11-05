@@ -6,6 +6,7 @@ import type { Category, Inquiry, Item, Project } from "@/lib/types";
 import { themeCss } from "@/lib/theme";
 import { Logo } from "@/components/site/Logo";
 import { HeroEditor } from "./HeroEditor";
+import { PrivatePortfolioManager } from "./PrivatePortfolioManager";
 import { CategoriesModule, PortfolioLayoutModule, ProjectsModule } from "./PortfolioModules";
 import { SettingsProvider, useSettings } from "./settings-context";
 import { ToastProvider, api } from "./ui";
@@ -43,6 +44,7 @@ const NAV: { group: string; items: { id: ModuleId; label: string; icon: string }
       { id: "hero", label: "Hero Editor", icon: "✦" },
       { id: "sections", label: "Page Sections", icon: "☰" },
       { id: "projects", label: "Portfolio Projects", icon: "▦" },
+      { id: "privatePortfolio", label: "Private Portfolio", icon: "◉" },
       { id: "categories", label: "Categories", icon: "◇" },
       { id: "layout", label: "Portfolio Layout", icon: "⊞" },
       { id: "services", label: "Services", icon: "◈" },
@@ -182,6 +184,7 @@ function Shell({ initial }: { initial: Initial }) {
           {mod === "hero" && <HeroEditor />}
           {mod === "sections" && <SectionsModule />}
           {mod === "projects" && <ProjectsModule {...shared} />}
+          {mod === "privatePortfolio" && <PrivatePortfolioManager />}
           {mod === "categories" && <CategoriesModule {...shared} />}
           {mod === "layout" && <PortfolioLayoutModule {...shared} />}
           {mod === "services" && <ItemsManager key="service" kind="service" items={items} setItems={setItemsFn} />}
