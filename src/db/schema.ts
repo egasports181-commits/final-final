@@ -67,6 +67,17 @@ export const media = pgTable("media", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const privatePortfolios = pgTable("private_portfolios", {
+  id: serial("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull().default(""),
+  description: text("description").notNull().default(""),
+  images: jsonb("images").notNull().default([]),
+  published: boolean("published").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const inquiries = pgTable("inquiries", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
