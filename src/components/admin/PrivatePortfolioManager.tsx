@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { newImage, type ProjectImage } from "@/lib/image";
 import { slugify } from "@/lib/settings-defaults";
 import type { PrivatePortfolio } from "@/lib/types";
@@ -35,7 +35,7 @@ export function PrivatePortfolioManager() {
   const [uploadProgress, setUploadProgress] = useState("");
   const toast = useToast();
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api<{ data: PrivatePortfolio[] }>("/api/admin/private-portfolios");
@@ -45,11 +45,11 @@ export function PrivatePortfolioManager() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     void refresh();
-  }, []);
+  }, [refresh]);
 
   const edit = (portfolio: PrivatePortfolio) => {
     setDraft({
@@ -168,7 +168,7 @@ export function PrivatePortfolioManager() {
           <TextField
             label="Page heading (optional)"
             value={draft.title}
-            onChange={(value) => setDraft({ ...draft, title: value, slug: draft.slug || slugify(value) })}
+            onChange={(value) => setDraft({ ...draft, title: value, slug: draft.slug || value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80) })}
             placeholder="e.g. Documentary Thumbnail Collection"
             maxLength={160}
           />
