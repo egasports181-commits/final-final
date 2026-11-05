@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useState } from "react";
 import { newImage, type ProjectImage } from "@/lib/image";
 import { slugify } from "@/lib/settings-defaults";
 import type { PrivatePortfolio } from "@/lib/types";
@@ -63,9 +63,8 @@ export function PrivatePortfolioManager() {
     });
   };
 
-  const uploadImages = async (event: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []);
-    event.target.value = "";
+  const uploadImages = async (selectedFiles: FileList | File[]) => {
+    const files = Array.from(selectedFiles);
     if (!files.length || !draft) return;
     if (draft.images.length + files.length > 100) {
       toast("error", "A private portfolio can contain up to 100 images.");
@@ -185,10 +184,27 @@ export function PrivatePortfolioManager() {
         </Panel>
 
         <Panel title={`Images (${draft.images.length})`} desc="Select many images at once. No title or description is required for individual images. JPG, PNG, WebP and other supported image formats up to 8 MB each.">
-          <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#d8d0c5] bg-[#fbf9f6] px-5 py-8 text-center transition hover:border-[var(--c-primary)]">
+          <label
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              event.preventDefault();
+              if (!uploading) void uploadImages(event.dataTransfer.files);
+            }}
+            className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#d8d0c5] bg-[#fbf9f6] px-5 py-8 text-center transition hover:border-[var(--c-primary)]"
+          >
             <span className="text-sm font-semibold text-[#222]">{uploading ? uploadProgress : "Choose images or drop them here"}</span>
             <span className="mt-1 text-xs text-[#8a837a]">Bulk upload · select multiple files · maximum 100 images per page</span>
-            <input type="file" accept="image/*" multiple disabled={uploading} onChange={uploadImages} className="sr-only" />
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              disabled={uploading}
+              onChange={(event) => {
+                void uploadImages(event.target.files ?? []);
+                event.target.value = "";
+              }}
+              className="sr-only"
+            />
           </label>
           {draft.images.length > 0 ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
