@@ -161,7 +161,7 @@ export function PrivatePortfolioManager() {
           <TextField
             label="URL slug *"
             value={draft.slug}
-            onChange={(value) => setDraft({ ...draft, slug: slugify(value) })}
+            onChange={(value) => setDraft({ ...draft, slug: value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80) })}
             placeholder="e.g. documentary-thumbnails-2026"
             hint={draft.slug ? `Your page: /private/${draft.slug}` : "Use a hard-to-guess slug. Anyone with the link can access it."}
             maxLength={80}
@@ -248,7 +248,12 @@ export function PrivatePortfolioManager() {
                 <div className={`mt-1 text-[0.68rem] ${portfolio.published ? "text-green-700" : "text-[#9a948c]"}`}>{portfolio.published ? "Published" : "Unpublished"}</div>
               </div>
               <div className="flex flex-wrap gap-2">
-                {portfolio.published && <a className="a-btn a-btn-ghost text-xs" href={`/private/${portfolio.slug}`} target="_blank" rel="noreferrer">Open link ↗</a>}
+                {portfolio.published && (
+                  <>
+                    <a className="a-btn a-btn-ghost text-xs" href={`/private/${portfolio.slug}`} target="_blank" rel="noreferrer">Open link ↗</a>
+                    <button className="a-btn a-btn-ghost text-xs" onClick={() => navigator.clipboard.writeText(`${baseUrl}/private/${portfolio.slug}`).then(() => toast("success", "Private link copied.")).catch(() => toast("error", "Could not copy the link."))}>Copy link</button>
+                  </>
+                )}
                 <button className="a-btn a-btn-dark text-xs" onClick={() => edit(portfolio)}>Edit</button>
                 <button className="a-btn a-btn-danger text-xs" onClick={() => remove(portfolio)}>Delete</button>
               </div>
