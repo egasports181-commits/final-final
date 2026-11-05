@@ -40,7 +40,7 @@ export default async function PrivatePortfolioPage({ params }: Props) {
     { id: "contact", visible: true, eyebrow: "Contact", title: "Let's talk", subtitle: "" };
   const pageSettings = {
     ...data.settings,
-    nav: [{ label: "Contact", href: "#contact" }],
+    nav: [{ label: "Contact", href: `/private/${slug}#contact` }],
   };
 
   return (
