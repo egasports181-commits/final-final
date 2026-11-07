@@ -58,12 +58,14 @@ export const items = pgTable("items", {
   visible: boolean("visible").notNull().default(true),
 });
 
+/** Stores media metadata in Postgres; binary files live in R2 for new uploads. */
 export const media = pgTable("media", {
   id: serial("id").primaryKey(),
   filename: text("filename").notNull(),
   mime: text("mime").notNull(),
   size: integer("size").notNull(),
-  data: bytea("data").notNull(),
+  data: bytea("data"),
+  storageKey: text("storage_key"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
