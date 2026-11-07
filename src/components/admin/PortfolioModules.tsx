@@ -82,9 +82,10 @@ export function ProjectsModule({ projects, setProjects, categories }: Shared) {
   const remove = async (p: Project) => {
     if (!confirmDelete(`"${p.title}"`)) return;
     try {
-      await api(`/api/admin/projects/${p.id}`, { method: "DELETE" });
+      const deleteR2 = window.confirm("Also delete this project's Cloudflare R2 images? Images used by other projects will be kept.");
+      const result = await api<{ warning?: string }>(`/api/admin/projects/${p.id}${deleteR2 ? "?deleteR2=1" : ""}`, { method: "DELETE" });
       setProjects(projects.filter((x) => x.id !== p.id));
-      toast("success", "Project deleted.");
+      toast(result.warning ? "error" : "success", result.warning || (deleteR2 ? "Project and unused R2 images deleted." : "Project deleted. R2 images were kept."));
     } catch (e) {
       toast("error", (e as Error).message);
     }
@@ -160,10 +161,10 @@ function ProjectEditor({ initial, categories, onCancel, onSaved }: { initial: Pr
 
   const upd = (patch: Partial<Project>) => setP((x) => ({ ...x, ...patch }));
 
-  const addFiles = async (files: File[], target: "cover" | "gallery") => {
+  const addFiles = async (files: File[], target: "cover" | "gallery", onProgress?: (percent: number) => void) => {
     for (const f of files) {
       try {
-        const r = await uploadFile(f);
+        const r = await uploadFile(f, onProgress);
         const img = newImage(r.url, preset, r.natural);
         if (target === "cover") {
           setP((x) => ({ ...x, cover: img }));

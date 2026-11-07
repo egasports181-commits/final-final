@@ -59,10 +59,30 @@ export function readImageSize(url: string): Promise<{ w: number; h: number } | u
   });
 }
 
-export async function uploadFile(file: File): Promise<{ url: string; id: number; natural?: { w: number; h: number } }> {
+export async function uploadFile(file: File, onProgress?: (percent: number) => void): Promise<{ url: string; key: string; natural?: { w: number; h: number } }> {
   const fd = new FormData();
   fd.append("file", file);
-  const data = await api<{ url: string; id: number }>("/api/admin/upload", { method: "POST", body: fd });
+  const data = await new Promise<{ url: string; key: string }>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/admin/upload");
+    xhr.withCredentials = true;
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100));
+    };
+    xhr.onerror = () => reject(new Error("Network error — upload connection failed."));
+    xhr.onabort = () => reject(new Error("Upload cancelled."));
+    xhr.onload = () => {
+      let response: { ok?: boolean; url?: string; key?: string; error?: string } | null = null;
+      try { response = JSON.parse(xhr.responseText); } catch { /* invalid response */ }
+      if (xhr.status < 200 || xhr.status >= 300 || !response?.ok || !response.url || !response.key) {
+        if (xhr.status === 401) return reject(new Error("Your session expired. Please reload and log in again."));
+        return reject(new Error(response?.error || `Upload failed (${xhr.status}).`));
+      }
+      resolve({ url: response.url, key: response.key });
+    };
+    xhr.send(fd);
+  });
+  onProgress?.(100);
   const natural = await readImageSize(data.url);
   return { ...data, natural };
 }
@@ -290,19 +310,22 @@ export function StringList({ label, values, onChange, placeholder = "Add item…
 }
 
 /* ---------------- Drop zone / image input ---------------- */
-export function DropZone({ onFiles, multiple, label = "Drag & drop images here, or click to browse", compact }: { onFiles: (files: File[]) => void | Promise<void>; multiple?: boolean; label?: string; compact?: boolean }) {
+export function DropZone({ onFiles, multiple, label = "Drag & drop images here, or click to browse", compact }: { onFiles: (files: File[], onProgress?: (percent: number) => void) => void | Promise<void>; multiple?: boolean; label?: string; compact?: boolean }) {
   const [over, setOver] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(0);
   const input = useRef<HTMLInputElement>(null);
   const handle = async (list: FileList | null) => {
     if (!list?.length) return;
     const files = Array.from(list).filter((f) => f.type.startsWith("image/"));
     if (!files.length) return;
     setBusy(true);
+    setProgress(0);
     try {
-      await onFiles(multiple ? files : [files[0]]);
+      await onFiles(multiple ? files : [files[0]], setProgress);
     } finally {
       setBusy(false);
+      setProgress(0);
       if (input.current) input.current.value = "";
     }
   };
@@ -327,7 +350,8 @@ export function DropZone({ onFiles, multiple, label = "Drag & drop images here, 
       } ${over ? "border-[var(--c-primary)] bg-[#fff1ea]" : "border-[#ddd6cc] bg-[#faf8f5] hover:border-[#bbb]"}`}
     >
       <span className="text-xl">{busy ? "⏳" : "⬆"}</span>
-      <span className="text-xs font-medium text-[#444]">{busy ? "Uploading…" : label}</span>
+      <span className="text-xs font-medium text-[#444]">{busy ? `Uploading… ${progress}%` : label}</span>
+      {busy && <span className="h-1.5 w-full max-w-48 overflow-hidden rounded-full bg-[#e8e2da]"><span className="block h-full rounded-full bg-[var(--c-primary)] transition-[width]" style={{ width: `${progress}%` }} /></span>}
       <span className="text-[0.68rem] text-[#9a948c]">JPG, PNG, WebP, GIF, SVG · max 8 MB</span>
       <input ref={input} type="file" accept="image/*" multiple={multiple} hidden onChange={(e) => handle(e.target.files)} />
     </div>
@@ -348,9 +372,9 @@ export function ImageInput({ label, value, onChange, hint, previewClass = "h-28"
         <div className="grid gap-2">
           <DropZone
             compact
-            onFiles={async ([f]) => {
+            onFiles={async ([f], onProgress) => {
               try {
-                const r = await uploadFile(f);
+                const r = await uploadFile(f, onProgress);
                 onChange(r.url);
                 toast("success", "Image uploaded. Remember to save changes.");
               } catch (e) {

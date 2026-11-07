@@ -16,6 +16,7 @@ import {
   normalizeProject,
 } from "./data";
 import type { ItemKind } from "./types";
+import { deleteR2Object, getR2KeyFromPublicUrl } from "./r2";
 import {
   ValidationError,
   validateCategory,
@@ -292,35 +293,60 @@ export async function updateResource(
   }
 }
 
+function projectImageUrls(value: unknown): string[] {
+  const imageUrl = (image: unknown) =>
+    image && typeof image === "object" && typeof (image as { url?: unknown }).url === "string"
+      ? (image as { url: string }).url
+      : null;
+  const project = value as { cover?: unknown; gallery?: unknown } | null;
+  const coverUrl = imageUrl(project?.cover);
+  const galleryUrls = Array.isArray(project?.gallery)
+    ? project.gallery.map(imageUrl).filter((url): url is string => !!url)
+    : [];
+  return [...new Set([coverUrl, ...galleryUrls].filter((url): url is string => !!url))];
+}
+
 export async function deleteResource(
   resource: Resource,
-  id: number
+  id: number,
+  options: { deleteR2?: boolean } = {}
 ) {
-  const tables = {
-    categories,
-    projects,
-    items,
-    inquiries,
-    media,
-  } as const;
+  if (resource === "projects") {
+    const [target] = await db.select().from(projects).where(eq(projects.id, id));
+    if (!target) return fail("Not found.", 404);
 
-  const table = tables[resource];
+    const targetUrls = projectImageUrls(target);
+    const otherProjects = await db.select().from(projects).where(ne(projects.id, id));
+    const inUseElsewhere = new Set(otherProjects.flatMap(projectImageUrls));
 
-  if (resource === "categories") {
-    await db
-      .update(projects)
-      .set({ categoryId: null })
-      .where(eq(projects.categoryId, id));
+    const [deleted] = await db
+      .delete(projects)
+      .where(eq(projects.id, id))
+      .returning({ id: projects.id });
+    if (!deleted) return fail("Not found.", 404);
+    if (!options.deleteR2) return ok({ id, r2Deleted: 0 });
+
+    const keys = [...new Set(targetUrls
+      .filter((url) => !inUseElsewhere.has(url))
+      .map(getR2KeyFromPublicUrl)
+      .filter((key): key is string => !!key))];
+    const results = await Promise.allSettled(keys.map(deleteR2Object));
+    const failed = results.filter((result) => result.status === "rejected").length;
+    return ok({
+      id,
+      r2Deleted: results.length - failed,
+      ...(failed ? { warning: `${failed} R2 image(s) could not be deleted. Remove them from Cloudflare R2 manually if needed.` } : {}),
+    });
   }
 
-  const rows = await db
-    .delete(table)
-    .where(eq(table.id, id))
-    .returning({ id: table.id });
+  if (resource === "categories") {
+    await db.update(projects).set({ categoryId: null }).where(eq(projects.categoryId, id));
+  }
 
-  return rows.length
-    ? ok({ id })
-    : fail("Not found.", 404);
+  const tables = { categories, items, inquiries, media } as const;
+  const table = tables[resource as keyof typeof tables];
+  const rows = await db.delete(table).where(eq(table.id, id)).returning({ id: table.id });
+  return rows.length ? ok({ id }) : fail("Not found.", 404);
 }
 
 export async function reorderResource(
