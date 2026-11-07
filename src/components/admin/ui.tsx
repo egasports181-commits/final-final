@@ -351,7 +351,7 @@ export function DropZone({ onFiles, multiple, label = "Drag & drop images here, 
     >
       <span className="text-xl">{busy ? "⏳" : "⬆"}</span>
       <span className="text-xs font-medium text-[#444]">{busy ? `Uploading… ${progress}%` : label}</span>
-      {busy && <span className="h-1.5 w-full max-w-48 overflow-hidden rounded-full bg-[#e8e2da]"><span className="block h-full rounded-full bg-[var(--c-primary)] transition-[width]" style={{ width: `${progress}%` }} /></span>
+      {busy && <span className="h-1.5 w-full max-w-48 overflow-hidden rounded-full bg-[#e8e2da]"><span className="block h-full rounded-full bg-[var(--c-primary)] transition-[width]" style={{ width: `${progress}%` }} /></span>}
       <span className="text-[0.68rem] text-[#9a948c]">JPG, PNG, WebP, GIF, SVG · max 8 MB</span>
       <input ref={input} type="file" accept="image/*" multiple={multiple} hidden onChange={(e) => handle(e.target.files)} />
     </div>
