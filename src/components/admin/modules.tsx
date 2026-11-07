@@ -334,6 +334,7 @@ export function SectionsModule() {
 export function MediaModule() {
   const toast = useToast();
   const [media, setMedia] = useState<MediaInfo[] | null>(null);
+  const [migrating, setMigrating] = useState(false);
   const load = async () => {
     try {
       const res = await api<{ data: MediaInfo[] }>("/api/admin/media");
@@ -344,6 +345,19 @@ export function MediaModule() {
     }
   };
   useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const migrateLegacy = async () => {
+    setMigrating(true);
+    try {
+      const result = await api<{ migrated: number; hasMore: boolean }>("/api/admin/media/migrate", { method: "POST" });
+      toast("success", result.migrated ? `${result.migrated} old image(s) moved to R2.` : "No old database images remain.");
+      if (result.hasMore) toast("info", "More old images remain. Run migration again to move the next batch.");
+      await load();
+    } catch (e) {
+      toast("error", (e as Error).message);
+    } finally {
+      setMigrating(false);
+    }
+  };
   const remove = async (m: MediaInfo) => {
     if (!confirmDelete(`"${m.filename}" (anything using it will show a broken image)`)) return;
     try {
@@ -356,7 +370,11 @@ export function MediaModule() {
   };
   return (
     <div>
-      <PageTitle title="Media Library" desc="Images are stored in your PostgreSQL database, so they persist across deploys. Copy a URL to use it anywhere." />
+      <PageTitle
+        title="Media Library"
+        desc="New uploads are stored in Cloudflare R2. PostgreSQL keeps only media metadata; existing uploads can be migrated below."
+        actions={<button className="a-btn a-btn-ghost" disabled={migrating} onClick={migrateLegacy}>{migrating ? "Migrating…" : "Migrate old images to R2"}</button>}
+      />
       <DropZone
         multiple
         onFiles={async (files) => {
