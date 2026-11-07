@@ -46,9 +46,12 @@ CREATE TABLE IF NOT EXISTS media (
   filename text NOT NULL,
   mime text NOT NULL,
   size integer NOT NULL,
-  data bytea NOT NULL,
+  data bytea,
+  storage_key text,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE media ALTER COLUMN data DROP NOT NULL;
+ALTER TABLE media ADD COLUMN IF NOT EXISTS storage_key text;
 CREATE TABLE IF NOT EXISTS inquiries (
   id serial PRIMARY KEY,
   name text NOT NULL,
@@ -185,7 +188,7 @@ async function seed() {
       categoryId: cat(p.category),
       summary: p.summary,
       description:
-        `${p.summary}\n\nThis is a demo concept project included with Upflit so you can see how the portfolio looks. Replace it with your own work from the Admin Panel → Portfolio Projects.`,
+        `${p.summary}\\n\\nThis is a demo concept project included with Upflit so you can see how the portfolio looks. Replace it with your own work from the Admin Panel → Portfolio Projects.`,
       details: [
         { label: "Type", value: "Concept / Demo" },
         { label: "Discipline", value: p.category },

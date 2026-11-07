@@ -8,6 +8,24 @@ A bold creative-studio website with an orange-to-red editorial design and a prot
 
 ---
 
+## Cloudflare R2 image storage
+
+New uploads from the Admin Panel are stored in Cloudflare R2. PostgreSQL stores only media metadata and the R2 object key; project/settings records continue to store the public image URL. Existing images remain available while they are migrated.
+
+Set these server-side environment variables in your local `.env.local` (or `.env`) and in your hosting provider:
+
+```env
+R2_ACCOUNT_ID=your_account_id
+R2_ACCESS_KEY_ID=your_new_access_key_id
+R2_SECRET_ACCESS_KEY=your_new_secret_access_key
+R2_BUCKET_NAME=upflit
+R2_PUBLIC_URL=https://images.upflit.online
+```
+
+In Cloudflare, create an R2 API token with Object Read & Write permissions restricted to the `upflit` bucket. Connect `images.upflit.online` under that bucket's **Settings → Custom Domains**, and wait until the domain status is **Active**. The domain must be configured in the same Cloudflare account as the bucket. Never commit R2 credentials to Git.
+
+The Media Library includes a migration action for old uploads. It moves existing PostgreSQL image blobs to R2 in small batches; do not delete the old database or bucket objects during migration. New uploads are already sent directly to R2.
+
 ## 1. Run it locally (Windows Command Prompt)
 
 **You need:** [Node.js 20+](https://nodejs.org) and [PostgreSQL](https://www.postgresql.org/download/windows/) (the installer includes pgAdmin).
