@@ -63,33 +63,43 @@ export async function POST(req: Request) {
       "Do not mention AI, image analysis, or unseen context."
     ].join("\n");
 
-    let aiResponse: Response;\n    try {\n      aiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [
-          { inlineData: { mimeType: responseType, data: bytes.toString("base64") } },
-          { text: prompt }
-        ] }],
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 256,
-          thinkingConfig: { thinkingLevel: "low" },
-          responseMimeType: "application/json",
-          responseJsonSchema: {
-            type: "OBJECT",
-            properties: {
-              title: { type: "STRING" },
-              description: { type: "STRING" },
-              category: { type: "STRING" }
-            },
-            required: ["title", "description", "category"],
-            propertyOrdering: ["title", "description", "category"]
+    let aiResponse: Response;
+    try {
+      aiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [
+            { inlineData: { mimeType: responseType, data: bytes.toString("base64") } },
+            { text: prompt }
+          ] }],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 256,
+            thinkingConfig: { thinkingLevel: "low" },
+            responseMimeType: "application/json",
+            responseJsonSchema: {
+              type: "OBJECT",
+              properties: {
+                title: { type: "STRING" },
+                description: { type: "STRING" },
+                category: { type: "STRING" }
+              },
+              required: ["title", "description", "category"],
+              propertyOrdering: ["title", "description", "category"]
+            }
           }
-        }
-      }),
-      signal: AbortSignal.timeout(18000)
-    });
+        }),
+        signal: AbortSignal.timeout(40000)
+      });
+    } catch (error) {
+      console.error("[upflit Gemini request]", error);
+      const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+      return jsonError(
+        timedOut ? "Gemini image analysis timed out after 40 seconds. Try a smaller image or retry." : "Could not connect to Gemini. Please retry.",
+        timedOut ? 504 : 502,
+      );
+    }
 
     if (!aiResponse.ok) {
       const detail = await aiResponse.text();
