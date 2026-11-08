@@ -169,6 +169,34 @@ function ProjectEditor({ initial, categories, onCancel, onSaved }: { initial: Pr
         if (target === "cover") {
           setP((x) => ({ ...x, cover: img }));
           setSelected("cover");
+
+          // Generate metadata for the cover and fill only fields the user has not entered.
+          if (["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"].includes(f.type)) {
+            try {
+              const result = await api<{ data: { title: string; description: string; category: string } }>(
+                "/api/admin/r2-media/metadata",
+                { method: "POST", json: { url: r.url, mimeType: f.type } },
+              );
+              const generated = result.data;
+              const matchingCategory = categories.find(
+                (category) => category.name.trim().toLowerCase() === generated.category.trim().toLowerCase(),
+              );
+              setP((current) => {
+                const title = current.title.trim() ? current.title : generated.title;
+                return {
+                  ...current,
+                  title,
+                  slug: current.slug.trim() ? current.slug : slugify(title),
+                  summary: current.summary.trim() ? current.summary : generated.description,
+                  description: current.description.trim() ? current.description : generated.description,
+                  categoryId: current.categoryId ?? matchingCategory?.id ?? null,
+                };
+              });
+              toast("success", "AI title and description added to the project form. Review them before saving.");
+            } catch (metadataError) {
+              toast("error", `Cover uploaded, but AI metadata failed: ${(metadataError as Error).message}`);
+            }
+          }
         } else {
           setP((x) => ({ ...x, gallery: [...x.gallery, img] }));
           setSelected(img.id);
