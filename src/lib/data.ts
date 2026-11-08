@@ -56,7 +56,13 @@ export async function getAllItems(kind?: ItemKind): Promise<Item[]> {
   const rows = kind
     ? await q.where(eq(items.kind, kind)).orderBy(asc(items.sortOrder), asc(items.id))
     : await q.orderBy(asc(items.sortOrder), asc(items.id));
-  return rows.map((r) => ({ ...r, kind: r.kind as ItemKind, data: (r.data ?? {}) as Record<string, unknown> }));
+  return rows.map((r) => {
+    const data = { ...((r.data ?? {}) as Record<string, unknown>) };
+    if (r.kind === "testimonial" && typeof data.avatarUrl === "string" && !/^https?:\\/\\//i.test(data.avatarUrl)) {
+      data.avatarUrl = "";
+    }
+    return { ...r, kind: r.kind as ItemKind, data };
+  });
 }
 
 export type PublicData = {
