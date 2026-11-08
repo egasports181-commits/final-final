@@ -83,8 +83,9 @@ const CATEGORY_SEED: [string, string][] = [
   ["Other Creative Work", "4:3"],
 ];
 
-function img(url: string, aspect: string, extra: Partial<ProjectImage["display"]> = {}): ProjectImage {
-  const i = newImage(url, aspect);
+function img(_url: string, aspect: string, extra: Partial<ProjectImage["display"]> = {}): ProjectImage {
+  // Demo content starts without local placeholder assets; upload real work to R2 from Admin.
+  const i = newImage("", aspect);
   i.display = { ...i.display, fit: "cover", ...extra };
   return i;
 }
