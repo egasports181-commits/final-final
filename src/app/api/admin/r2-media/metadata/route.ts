@@ -6,7 +6,7 @@ import { getR2KeyFromPublicUrl } from "@/lib/r2";
 import { eq } from "drizzle-orm";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]);
@@ -33,7 +33,17 @@ export async function POST(req: Request) {
     await ensureDb();
     const categoryRows = await db.select({ name: categories.name }).from(categories);
     const categoryNames = categoryRows.map((item) => item.name);
-    const imageResponse = await fetch(url, { cache: "no-store", redirect: "error", signal: AbortSignal.timeout(8000) });
+    let imageResponse: Response;
+    try {
+      imageResponse = await fetch(url, { cache: "no-store", redirect: "error", signal: AbortSignal.timeout(12000) });
+    } catch (error) {
+      console.error("[upflit R2 image fetch]", error);
+      const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+      return jsonError(
+        timedOut ? "Timed out while reading the uploaded image from R2. Try a smaller image or retry." : "Could not connect to the uploaded image in R2.",
+        timedOut ? 504 : 502,
+      );
+    }
     if (!imageResponse.ok) return jsonError("Could not read the uploaded R2 image.", 502);
     const responseType = (imageResponse.headers.get("content-type") || "").split(";")[0].toLowerCase();
     if (!MIME_TYPES.has(responseType)) return jsonError("R2 returned an unsupported image type.", 415);
@@ -53,7 +63,7 @@ export async function POST(req: Request) {
       "Do not mention AI, image analysis, or unseen context."
     ].join("\n");
 
-    const aiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent", {
+    let aiResponse: Response;\n    try {\n      aiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
