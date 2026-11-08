@@ -58,7 +58,7 @@ export async function getAllItems(kind?: ItemKind): Promise<Item[]> {
     : await q.orderBy(asc(items.sortOrder), asc(items.id));
   return rows.map((r) => {
     const data = { ...((r.data ?? {}) as Record<string, unknown>) };
-    if (r.kind === "testimonial" && typeof data.avatarUrl === "string" && !/^https?:\\/\\//i.test(data.avatarUrl)) {
+    if (r.kind === "testimonial" && typeof data.avatarUrl === "string" && !/^https?:\/\//i.test(data.avatarUrl)) {
       data.avatarUrl = "";
     }
     return { ...r, kind: r.kind as ItemKind, data };
