@@ -1,4 +1,5 @@
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 let client: S3Client | null = null;
 
@@ -31,6 +32,17 @@ export function getR2Client() {
 export function getR2PublicUrl(key: string) {
   const { publicUrl } = config();
   return publicUrl + "/" + key.split("/").map(encodeURIComponent).join("/");
+}
+
+export async function createR2UploadUrl(input: { key: string; contentType: string }) {
+  const { bucket } = config();
+  const command = new PutObjectCommand({
+    Bucket: bucket,
+    Key: input.key,
+    ContentType: input.contentType,
+    CacheControl: "public, max-age=31536000, immutable",
+  });
+  return getSignedUrl(getR2Client(), command, { expiresIn: 300 });
 }
 
 export async function putR2Object(input: { key: string; body: Buffer; contentType: string }) {
