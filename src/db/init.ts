@@ -41,6 +41,14 @@ CREATE TABLE IF NOT EXISTS items (
   sort_order integer NOT NULL DEFAULT 0,
   visible boolean NOT NULL DEFAULT true
 );
+CREATE TABLE IF NOT EXISTS media_metadata (
+  key text PRIMARY KEY,
+  title text NOT NULL,
+  description text NOT NULL,
+  category text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
 CREATE TABLE IF NOT EXISTS media (
   id serial PRIMARY KEY,
   filename text NOT NULL,
