@@ -334,6 +334,20 @@ export function SectionsModule() {
 export function MediaModule() {
   const toast = useToast();
   const [media, setMedia] = useState<MediaInfo[] | null>(null);
+  const [migrating, setMigrating] = useState(false);
+  const migrateLegacy = async () => {
+    if (!window.confirm("Copy existing PostgreSQL media files to Cloudflare R2 and update website image references? Original database files will be kept as a backup.")) return;
+    setMigrating(true);
+    try {
+      const result = await api<{ data: { mediaFilesCopied: number; projectsUpdated: number; itemsUpdated: number; settingsUpdated: boolean } }>("/api/admin/r2-media/migrate", { method: "POST" });
+      toast("success", `Copied ${result.data.mediaFilesCopied} old image(s) to R2. Updated ${result.data.projectsUpdated} project(s), ${result.data.itemsUpdated} content item(s)${result.data.settingsUpdated ? " and site settings" : ""}.`);
+      await load();
+    } catch (e) {
+      toast("error", `Migration failed: ${(e as Error).message}`);
+    } finally {
+      setMigrating(false);
+    }
+  };
   const load = async () => {
     try {
       const res = await api<{ data: MediaInfo[] }>("/api/admin/r2-media");
@@ -357,7 +371,13 @@ export function MediaModule() {
   };
   return (
     <div>
-      <PageTitle title="R2 Media Library" desc="Images uploaded here are stored in Cloudflare R2, not in PostgreSQL. Copy a public URL to use it in any image field." />
+      <PageTitle title="R2 Media Library" desc="New uploads are stored in Cloudflare R2. Existing PostgreSQL media can be copied to R2 without deleting the original database files." />
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="button" className="a-btn a-btn-ghost" onClick={migrateLegacy} disabled={migrating}>
+          {migrating ? "Migrating old images…" : "Migrate old database images to R2"}
+        </button>
+        <span className="text-xs text-[#9a948c]">Run once if you have images from the previous Neon storage system.</span>
+      </div>
       <DropZone
         multiple
         onFiles={async (files) => {
