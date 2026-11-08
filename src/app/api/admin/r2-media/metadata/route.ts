@@ -53,7 +53,7 @@ export async function POST(req: Request) {
       "Do not mention AI, image analysis, or unseen context."
     ].join("\n");
 
-    const aiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", {
+    const aiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
@@ -64,7 +64,7 @@ export async function POST(req: Request) {
         generationConfig: {
           temperature: 0.2,
           maxOutputTokens: 256,
-          thinkingConfig: { thinkingBudget: 0 },
+          thinkingConfig: { thinkingLevel: "low" },
           responseMimeType: "application/json",
           responseJsonSchema: {
             type: "OBJECT",
