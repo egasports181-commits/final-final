@@ -85,6 +85,13 @@ export function sanitizeImage(input: unknown, aspectFallback?: string): ProjectI
   if (!input || typeof input !== "object") return null;
   const i = input as Partial<ProjectImage>;
   if (typeof i.url !== "string" || !i.url.trim()) return null;
+  // Public site images must be absolute URLs. Old relative Neon/static paths are not valid R2 assets.
+  try {
+    const parsed = new URL(i.url.trim());
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return null;
+  } catch {
+    return null;
+  }
   return {
     id: typeof i.id === "string" && i.id ? i.id.slice(0, 40) : Math.random().toString(36).slice(2, 10),
     url: i.url.trim().slice(0, 1000),
