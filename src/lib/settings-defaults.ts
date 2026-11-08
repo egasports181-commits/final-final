@@ -298,7 +298,7 @@ export function sanitizeSettings(input: unknown): SiteSettings {
   }
   s.sections = sections;
   // Remove legacy relative paths from the former local/Neon image flow.
-  const cleanImageUrl = (value: string) => /^https?:\\/\\//i.test(value) ? value : "";
+  const cleanImageUrl = (value: string) => /^https?:\/\//i.test(value) ? value : "";
   s.hero.imageUrl = cleanImageUrl(s.hero.imageUrl);
   s.about.imageUrl = cleanImageUrl(s.about.imageUrl);
   s.brand.logoUrl = cleanImageUrl(s.brand.logoUrl);
