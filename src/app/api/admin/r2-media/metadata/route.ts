@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     await ensureDb();
     const categoryRows = await db.select({ name: categories.name }).from(categories);
     const categoryNames = categoryRows.map((item) => item.name);
-    const imageResponse = await fetch(url, { cache: "no-store", redirect: "error", signal: AbortSignal.timeout(15000) });
+    const imageResponse = await fetch(url, { cache: "no-store", redirect: "error", signal: AbortSignal.timeout(8000) });
     if (!imageResponse.ok) return jsonError("Could not read the uploaded R2 image.", 502);
     const responseType = (imageResponse.headers.get("content-type") || "").split(";")[0].toLowerCase();
     if (!MIME_TYPES.has(responseType)) return jsonError("R2 returned an unsupported image type.", 415);
@@ -63,7 +63,8 @@ export async function POST(req: Request) {
         ] }],
         generationConfig: {
           temperature: 0.2,
-          maxOutputTokens: 300,
+          maxOutputTokens: 256,
+          thinkingConfig: { thinkingBudget: 0 },
           responseMimeType: "application/json",
           responseJsonSchema: {
             type: "OBJECT",
@@ -77,13 +78,21 @@ export async function POST(req: Request) {
           }
         }
       }),
-      signal: AbortSignal.timeout(25000)
+      signal: AbortSignal.timeout(18000)
     });
 
     if (!aiResponse.ok) {
       const detail = await aiResponse.text();
       console.error("[upflit gemini metadata]", aiResponse.status, detail.slice(0, 1200));
-      return jsonError(aiResponse.status === 429 ? "Gemini free-tier rate limit reached. Try again later." : "Gemini could not generate metadata. Check the API key, model access and quota.", aiResponse.status === 429 ? 429 : 502);
+      let providerMessage = "Gemini could not generate metadata. Check API key, model access and quota.";
+      try {
+        const parsed = JSON.parse(detail);
+        providerMessage = parsed?.error?.message || providerMessage;
+      } catch {}
+      return jsonError(
+        aiResponse.status === 429 ? "Gemini free-tier rate limit reached. Try again later." : `Gemini API error (${aiResponse.status}): ${providerMessage}`,
+        aiResponse.status === 429 ? 429 : 502,
+      );
     }
 
     const result = await aiResponse.json();
