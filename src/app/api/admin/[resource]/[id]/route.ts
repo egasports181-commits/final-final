@@ -20,10 +20,11 @@ export async function PUT(req: Request, ctx: Ctx) {
   return handle(() => updateResource(p.resource, p.id, body));
 }
 
-export async function DELETE(_req: Request, ctx: Ctx) {
+export async function DELETE(req: Request, ctx: Ctx) {
   const denied = await requireAdmin();
   if (denied) return denied;
   const p = await parse(ctx);
   if (!p) return jsonError("Not found.", 404);
-  return handle(() => deleteResource(p.resource, p.id));
+  const deleteR2 = new URL(req.url).searchParams.get("deleteR2") === "1";
+  return handle(() => deleteResource(p.resource, p.id, { deleteR2 }));
 }
