@@ -336,7 +336,7 @@ export function MediaModule() {
   const [media, setMedia] = useState<MediaInfo[] | null>(null);
   const load = async () => {
     try {
-      const res = await api<{ data: MediaInfo[] }>("/api/admin/media");
+      const res = await api<{ data: MediaInfo[] }>("/api/admin/r2-media");
       setMedia(res.data);
     } catch (e) {
       toast("error", (e as Error).message);
@@ -345,18 +345,19 @@ export function MediaModule() {
   };
   useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const remove = async (m: MediaInfo) => {
-    if (!confirmDelete(`"${m.filename}" (anything using it will show a broken image)`)) return;
+    if (!confirmDelete(`"${m.filename}" from Cloudflare R2?`)) return;
     try {
-      await api(`/api/admin/media/${m.id}`, { method: "DELETE" });
-      setMedia((all) => (all || []).filter((x) => x.id !== m.id));
-      toast("success", "Image deleted.");
+      const keyPath = m.key.split("/").map(encodeURIComponent).join("/");
+      await api(`/api/admin/r2-media/${keyPath}`, { method: "DELETE" });
+      setMedia((all) => (all || []).filter((x) => x.key !== m.key));
+      toast("success", "R2 image deleted.");
     } catch (e) {
       toast("error", (e as Error).message);
     }
   };
   return (
     <div>
-      <PageTitle title="Media Library" desc="Images are stored in your PostgreSQL database, so they persist across deploys. Copy a URL to use it anywhere." />
+      <PageTitle title="R2 Media Library" desc="Images uploaded here are stored in Cloudflare R2, not in PostgreSQL. Copy a public URL to use it in any image field." />
       <DropZone
         multiple
         onFiles={async (files) => {
@@ -364,15 +365,15 @@ export function MediaModule() {
           for (const f of files) {
             try { await uploadFile(f); ok++; } catch (e) { toast("error", `${f.name}: ${(e as Error).message}`); }
           }
-          if (ok) toast("success", `${ok} image(s) uploaded.`);
+          if (ok) toast("success", `${ok} image(s) uploaded to Cloudflare R2.`);
           load();
         }}
       />
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {media === null && <p className="text-sm text-[#9a948c]">Loading…</p>}
-        {media?.length === 0 && <p className="col-span-full text-sm text-[#9a948c]">No uploads yet.</p>}
+        {media === null && <p className="text-sm text-[#9a948c]">Loading R2 objects…</p>}
+        {media?.length === 0 && <p className="col-span-full text-sm text-[#9a948c]">No images found in the R2 portfolio/ folder yet.</p>}
         {media?.map((m) => (
-          <div key={m.id} className="a-card overflow-hidden">
+          <div key={m.key} className="a-card overflow-hidden">
             <div className="aspect-square bg-[repeating-conic-gradient(#eee_0_25%,#fff_0_50%)] bg-[length:16px_16px]">
               <img src={m.url} alt="" className="h-full w-full object-contain" loading="lazy" />
             </div>
