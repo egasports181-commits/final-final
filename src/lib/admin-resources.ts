@@ -6,7 +6,6 @@ import {
   categories,
   inquiries,
   items,
-  media,
   projects,
 } from "@/db/schema";
 import {
@@ -30,7 +29,6 @@ export const RESOURCES = [
   "projects",
   "items",
   "inquiries",
-  "media",
 ] as const;
 
 export type Resource = (typeof RESOURCES)[number];
@@ -128,25 +126,6 @@ export async function listResource(
           .orderBy(desc(inquiries.createdAt)),
       });
 
-    case "media": {
-      const rows = await db
-        .select({
-          id: media.id,
-          filename: media.filename,
-          mime: media.mime,
-          size: media.size,
-          createdAt: media.createdAt,
-        })
-        .from(media)
-        .orderBy(desc(media.id));
-
-      return ok({
-        data: rows.map((r) => ({
-          ...r,
-          url: `/api/media/${r.id}`,
-        })),
-      });
-    }
   }
 }
 
@@ -343,7 +322,7 @@ export async function deleteResource(
     await db.update(projects).set({ categoryId: null }).where(eq(projects.categoryId, id));
   }
 
-  const tables = { categories, items, inquiries, media } as const;
+  const tables = { categories, items, inquiries } as const;
   const table = tables[resource as keyof typeof tables];
   const rows = await db.delete(table).where(eq(table.id, id)).returning({ id: table.id });
   return rows.length ? ok({ id }) : fail("Not found.", 404);
