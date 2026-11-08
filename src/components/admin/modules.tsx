@@ -381,12 +381,24 @@ export function MediaModule() {
       <DropZone
         multiple
         onFiles={async (files) => {
-          let ok = 0;
+          let uploaded = 0;
+          let generated = 0;
           for (const f of files) {
-            try { await uploadFile(f); ok++; } catch (e) { toast("error", `${f.name}: ${(e as Error).message}`); }
+            try {
+              const result = await uploadFile(f);
+              uploaded++;
+              try {
+                await api("/api/admin/r2-media/metadata", { method: "POST", json: { url: result.url, mimeType: f.type } });
+                generated++;
+              } catch (e) {
+                toast("error", `${f.name}: uploaded, but AI metadata failed — ${(e as Error).message}`);
+              }
+            } catch (e) {
+              toast("error", `${f.name}: ${(e as Error).message}`);
+            }
           }
-          if (ok) toast("success", `${ok} image(s) uploaded to Cloudflare R2.`);
-          load();
+          if (uploaded) toast("success", `${uploaded} image(s) uploaded to R2; AI metadata generated for ${generated}.`);
+          await load();
         }}
       />
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -398,8 +410,9 @@ export function MediaModule() {
               <img src={m.url} alt="" className="h-full w-full object-contain" loading="lazy" />
             </div>
             <div className="p-2">
-              <div className="truncate text-xs font-medium">{m.filename}</div>
-              <div className="text-[0.65rem] text-[#9a948c]">{Math.round(m.size / 1024)} KB</div>
+              <div className="truncate text-xs font-medium">{m.metadata?.title || m.filename}</div>
+              <div className="text-[0.65rem] text-[#9a948c]">{Math.round(m.size / 1024)} KB{m.metadata?.category ? ` · ${m.metadata.category}` : " · Metadata pending"}</div>
+              {m.metadata?.description && <p className="mt-1 line-clamp-3 text-[0.68rem] leading-relaxed text-[#7a746c]">{m.metadata.description}</p>}
               <div className="mt-2 flex gap-1">
                 <button className="a-btn a-btn-ghost flex-1 justify-center px-2 py-1 text-xs" onClick={() => navigator.clipboard.writeText(m.url).then(() => toast("info", `Copied ${m.url}`))}>Copy URL</button>
                 <button className="a-btn a-btn-danger px-2 py-1 text-xs" onClick={() => remove(m)} aria-label="Delete">✕</button>
