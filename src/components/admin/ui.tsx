@@ -60,31 +60,30 @@ export function readImageSize(url: string): Promise<{ w: number; h: number } | u
 }
 
 export async function uploadFile(file: File, onProgress?: (percent: number) => void): Promise<{ url: string; key: string; natural?: { w: number; h: number } }> {
-  const fd = new FormData();
-  fd.append("file", file);
-  const data = await new Promise<{ url: string; key: string }>((resolve, reject) => {
+  const prepared = await api<{ url: string; key: string; uploadUrl: string; contentType: string }>("/api/admin/upload", {
+    method: "POST",
+    json: { name: file.name, type: file.type, size: file.size },
+  });
+
+  await new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/api/admin/upload");
-    xhr.withCredentials = true;
+    xhr.open("PUT", prepared.uploadUrl);
+    xhr.setRequestHeader("Content-Type", prepared.contentType);
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100));
     };
-    xhr.onerror = () => reject(new Error("Network error — upload connection failed."));
+    xhr.onerror = () => reject(new Error("Network error — R2 upload connection failed. Check the bucket CORS settings."));
     xhr.onabort = () => reject(new Error("Upload cancelled."));
     xhr.onload = () => {
-      let response: { ok?: boolean; url?: string; key?: string; error?: string } | null = null;
-      try { response = JSON.parse(xhr.responseText); } catch { /* invalid response */ }
-      if (xhr.status < 200 || xhr.status >= 300 || !response?.ok || !response.url || !response.key) {
-        if (xhr.status === 401) return reject(new Error("Your session expired. Please reload and log in again."));
-        return reject(new Error(response?.error || `Upload failed (${xhr.status}).`));
-      }
-      resolve({ url: response.url, key: response.key });
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error(`Cloudflare R2 upload failed (${xhr.status}). Check R2 credentials and bucket CORS.`));
     };
-    xhr.send(fd);
+    xhr.send(file);
   });
+
   onProgress?.(100);
-  const natural = await readImageSize(data.url);
-  return { ...data, natural };
+  const natural = await readImageSize(prepared.url);
+  return { url: prepared.url, key: prepared.key, natural };
 }
 
 /* ---------------- Toasts ---------------- */
@@ -352,7 +351,7 @@ export function DropZone({ onFiles, multiple, label = "Drag & drop images here, 
       <span className="text-xl">{busy ? "⏳" : "⬆"}</span>
       <span className="text-xs font-medium text-[#444]">{busy ? `Uploading… ${progress}%` : label}</span>
       {busy && <span className="h-1.5 w-full max-w-48 overflow-hidden rounded-full bg-[#e8e2da]"><span className="block h-full rounded-full bg-[var(--c-primary)] transition-[width]" style={{ width: `${progress}%` }} /></span>}
-      <span className="text-[0.68rem] text-[#9a948c]">JPG, PNG, WebP, GIF, SVG · max 8 MB</span>
+      <span className="text-[0.68rem] text-[#9a948c]">JPG, PNG, WebP, GIF, SVG · max 25 MB</span>
       <input ref={input} type="file" accept="image/*" multiple={multiple} hidden onChange={(e) => handle(e.target.files)} />
     </div>
   );
