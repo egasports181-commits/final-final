@@ -29,11 +29,20 @@ export async function POST(req: Request) {
   if (!key) return jsonError("This image URL is not a valid Upflit R2 portfolio URL.");
   if (!MIME_TYPES.has(mimeType)) return jsonError("AI metadata supports JPG, PNG, WebP, GIF and AVIF images only.");
 
+  let stage = "database initialization";
+  console.info("[upflit metadata] request started");
   try {
+    console.info("[upflit metadata] DB_INIT_STARTED");
     await ensureDb();
+    console.info("[upflit metadata] DB_INIT_COMPLETED");
+
+    stage = "category query";
     const categoryRows = await db.select({ name: categories.name }).from(categories);
+    console.info("[upflit metadata] CATEGORY_QUERY_COMPLETED");
     const categoryNames = categoryRows.map((item) => item.name);
     let imageResponse: Response;
+    stage = "R2 image fetch";
+    console.info("[upflit metadata] R2_FETCH_STARTED");
     try {
       imageResponse = await fetch(url, { cache: "no-store", redirect: "error", signal: AbortSignal.timeout(12000) });
     } catch (error) {
@@ -44,6 +53,7 @@ export async function POST(req: Request) {
         timedOut ? 504 : 502,
       );
     }
+    console.info("[upflit metadata] R2_FETCH_COMPLETED");
     if (!imageResponse.ok) return jsonError("Could not read the uploaded R2 image.", 502);
     const responseType = (imageResponse.headers.get("content-type") || "").split(";")[0].toLowerCase();
     if (!MIME_TYPES.has(responseType)) return jsonError("R2 returned an unsupported image type.", 415);
@@ -64,6 +74,8 @@ export async function POST(req: Request) {
     ].join("\n");
 
     let aiResponse: Response;
+    stage = "Gemini request";
+    console.info("[upflit metadata] GEMINI_REQUEST_STARTED");
     try {
       aiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent", {
         method: "POST",
@@ -101,6 +113,7 @@ export async function POST(req: Request) {
       );
     }
 
+    console.info("[upflit metadata] GEMINI_RESPONSE_RECEIVED");
     if (!aiResponse.ok) {
       const detail = await aiResponse.text();
       console.error("[upflit gemini metadata]", aiResponse.status, detail.slice(0, 1200));
@@ -128,11 +141,14 @@ export async function POST(req: Request) {
     };
     if (!metadata.title || !metadata.description || !metadata.category) return jsonError("Gemini returned incomplete metadata. Please retry.", 502);
 
+    stage = "metadata database save";
+    console.info("[upflit metadata] DB_SAVE_STARTED");
     await db.insert(mediaMetadata).values({ key, ...metadata })
       .onConflictDoUpdate({ target: mediaMetadata.key, set: { ...metadata, updatedAt: new Date() } });
+    console.info("[upflit metadata] DB_SAVE_COMPLETED");
     return Response.json({ ok: true, data: { key, ...metadata } });
   } catch (error) {
-    console.error("[upflit image metadata]", error);
+    console.error("[upflit image metadata] Failed at stage:", stage, error);
     return jsonError(error instanceof Error ? error.message : "Could not generate image metadata.", 500);
   }
 }
