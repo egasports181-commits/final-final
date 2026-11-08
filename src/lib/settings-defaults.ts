@@ -58,7 +58,7 @@ export const DEFAULT_SETTINGS = {
     sideText:
       "Upflit is an independent creative studio crafting brand identities, campaigns and visuals that help ambitious brands grow, scale, and stand out.",
     bgWord: "UPFLIT",
-    imageUrl: "/images/hero.jpg",
+    imageUrl: "",
     fit: "cover",
     layer: "behind",
     imageFade: true,
@@ -100,7 +100,7 @@ export const DEFAULT_SETTINGS = {
   about: {
     text:
       "Upflit is a creative design studio focused on visual storytelling. We blend strategy with bold aesthetics to build brands, campaigns and digital experiences that feel distinctive and work hard. Every pixel has a purpose.",
-    imageUrl: "/images/work-brand.jpg",
+    imageUrl: "",
     highlights: [
       { value: "12", label: "Design disciplines" },
       { value: "48h", label: "Typical first draft" },
@@ -297,6 +297,13 @@ export function sanitizeSettings(input: unknown): SiteSettings {
     if (!seen.has(def.id)) sections.push({ ...def });
   }
   s.sections = sections;
+  // Remove legacy relative paths from the former local/Neon image flow.
+  const cleanImageUrl = (value: string) => /^https?:\\/\\//i.test(value) ? value : "";
+  s.hero.imageUrl = cleanImageUrl(s.hero.imageUrl);
+  s.about.imageUrl = cleanImageUrl(s.about.imageUrl);
+  s.brand.logoUrl = cleanImageUrl(s.brand.logoUrl);
+  s.brand.faviconUrl = cleanImageUrl(s.brand.faviconUrl);
+  s.seo.ogImage = cleanImageUrl(s.seo.ogImage);
   return s;
 }
 
