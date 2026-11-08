@@ -6,7 +6,7 @@ import { getR2KeyFromPublicUrl } from "@/lib/r2";
 import { eq } from "drizzle-orm";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]);
@@ -29,11 +29,31 @@ export async function POST(req: Request) {
   if (!key) return jsonError("This image URL is not a valid Upflit R2 portfolio URL.");
   if (!MIME_TYPES.has(mimeType)) return jsonError("AI metadata supports JPG, PNG, WebP, GIF and AVIF images only.");
 
+  let stage = "database initialization";
+  console.info("[upflit metadata] request started");
   try {
+    console.info("[upflit metadata] DB_INIT_STARTED");
     await ensureDb();
+    console.info("[upflit metadata] DB_INIT_COMPLETED");
+
+    stage = "category query";
     const categoryRows = await db.select({ name: categories.name }).from(categories);
+    console.info("[upflit metadata] CATEGORY_QUERY_COMPLETED");
     const categoryNames = categoryRows.map((item) => item.name);
-    const imageResponse = await fetch(url, { cache: "no-store", redirect: "error", signal: AbortSignal.timeout(8000) });
+    let imageResponse: Response;
+    stage = "R2 image fetch";
+    console.info("[upflit metadata] R2_FETCH_STARTED");
+    try {
+      imageResponse = await fetch(url, { cache: "no-store", redirect: "error", signal: AbortSignal.timeout(12000) });
+    } catch (error) {
+      console.error("[upflit R2 image fetch]", error);
+      const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+      return jsonError(
+        timedOut ? "Timed out while reading the uploaded image from R2. Try a smaller image or retry." : "Could not connect to the uploaded image in R2.",
+        timedOut ? 504 : 502,
+      );
+    }
+    console.info("[upflit metadata] R2_FETCH_COMPLETED");
     if (!imageResponse.ok) return jsonError("Could not read the uploaded R2 image.", 502);
     const responseType = (imageResponse.headers.get("content-type") || "").split(";")[0].toLowerCase();
     if (!MIME_TYPES.has(responseType)) return jsonError("R2 returned an unsupported image type.", 415);
@@ -53,34 +73,47 @@ export async function POST(req: Request) {
       "Do not mention AI, image analysis, or unseen context."
     ].join("\n");
 
-    const aiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [
-          { inlineData: { mimeType: responseType, data: bytes.toString("base64") } },
-          { text: prompt }
-        ] }],
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 256,
-          thinkingConfig: { thinkingLevel: "low" },
-          responseMimeType: "application/json",
-          responseJsonSchema: {
-            type: "OBJECT",
-            properties: {
-              title: { type: "STRING" },
-              description: { type: "STRING" },
-              category: { type: "STRING" }
-            },
-            required: ["title", "description", "category"],
-            propertyOrdering: ["title", "description", "category"]
+    let aiResponse: Response;
+    stage = "Gemini request";
+    console.info("[upflit metadata] GEMINI_REQUEST_STARTED");
+    try {
+      aiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [
+            { inlineData: { mimeType: responseType, data: bytes.toString("base64") } },
+            { text: prompt }
+          ] }],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 256,
+            thinkingConfig: { thinkingLevel: "low" },
+            responseMimeType: "application/json",
+            responseJsonSchema: {
+              type: "OBJECT",
+              properties: {
+                title: { type: "STRING" },
+                description: { type: "STRING" },
+                category: { type: "STRING" }
+              },
+              required: ["title", "description", "category"],
+              propertyOrdering: ["title", "description", "category"]
+            }
           }
-        }
-      }),
-      signal: AbortSignal.timeout(18000)
-    });
+        }),
+        signal: AbortSignal.timeout(40000)
+      });
+    } catch (error) {
+      console.error("[upflit Gemini request]", error);
+      const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+      return jsonError(
+        timedOut ? "Gemini image analysis timed out after 40 seconds. Try a smaller image or retry." : "Could not connect to Gemini. Please retry.",
+        timedOut ? 504 : 502,
+      );
+    }
 
+    console.info("[upflit metadata] GEMINI_RESPONSE_RECEIVED");
     if (!aiResponse.ok) {
       const detail = await aiResponse.text();
       console.error("[upflit gemini metadata]", aiResponse.status, detail.slice(0, 1200));
@@ -108,11 +141,14 @@ export async function POST(req: Request) {
     };
     if (!metadata.title || !metadata.description || !metadata.category) return jsonError("Gemini returned incomplete metadata. Please retry.", 502);
 
+    stage = "metadata database save";
+    console.info("[upflit metadata] DB_SAVE_STARTED");
     await db.insert(mediaMetadata).values({ key, ...metadata })
       .onConflictDoUpdate({ target: mediaMetadata.key, set: { ...metadata, updatedAt: new Date() } });
+    console.info("[upflit metadata] DB_SAVE_COMPLETED");
     return Response.json({ ok: true, data: { key, ...metadata } });
   } catch (error) {
-    console.error("[upflit image metadata]", error);
+    console.error("[upflit image metadata] Failed at stage:", stage, error);
     return jsonError(error instanceof Error ? error.message : "Could not generate image metadata.", 500);
   }
 }
