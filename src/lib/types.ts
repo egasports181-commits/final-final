@@ -64,4 +64,4 @@ export type Inquiry = {
   createdAt: string;
 };
 
-export type MediaInfo = { id: number; filename: string; mime: string; size: number; createdAt: string; url: string };
+export type MediaInfo = { key: string; filename: string; size: number; lastModified: string | null; url: string };
