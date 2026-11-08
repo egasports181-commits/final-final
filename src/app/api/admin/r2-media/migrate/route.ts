@@ -6,7 +6,7 @@ import { items, media, projects, settings } from "@/db/schema";
 import { putR2Object } from "@/lib/r2";
 
 export const runtime = "nodejs";
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 function safeFilename(value: string) {
   return value.normalize("NFKD").replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/-+/g, "-").replace(/^[-.]+|[-.]+$/g, "").slice(-100) || "image";
