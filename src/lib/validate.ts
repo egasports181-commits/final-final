@@ -25,8 +25,8 @@ export function validateCategory(input: unknown) {
 
 export function validateProject(input: unknown) {
   const o = obj(input);
-  // A title is optional. Keep the database NOT NULL constraint satisfied with a safe fallback.
-  const title = str(o.title, 160) || "Untitled project";
+  // Titles are optional; an empty string satisfies the existing NOT NULL column.
+  const title = str(o.title, 160);
   const cover = sanitizeImage(o.cover);
   const gallery = Array.isArray(o.gallery)
     ? o.gallery.map((g) => sanitizeImage(g)).filter((g): g is ProjectImage => !!g).slice(0, 40)
