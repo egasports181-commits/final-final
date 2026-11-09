@@ -141,6 +141,7 @@ export const DEFAULT_SETTINGS = {
   },
   portfolio: {
     mode: "uniform",
+    autoFill: true,
     colsDesktop: 3,
     colsTablet: 2,
     colsMobile: 1,
