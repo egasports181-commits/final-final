@@ -7,9 +7,10 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     await db.execute(sql`select 1`);
-    await ensureDb().catch((err) => console.error("[upflit] init failed", err));
+    await ensureDb();
     return Response.json({ ok: true });
-  } catch {
+  } catch (err) {
+    console.error("[upflit] health check failed", err);
     return Response.json({ ok: false }, { status: 500 });
   }
 }
