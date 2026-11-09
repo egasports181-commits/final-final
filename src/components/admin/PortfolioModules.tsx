@@ -466,9 +466,9 @@ export function PortfolioLayoutModule({ projects, categories }: Shared) {
         <div className="grid content-start gap-5">
           <Panel title="Display mode">
             <Segmented value={l.mode} onChange={(v) => set({ mode: v })} options={[{ value: "uniform", label: "Uniform Grid" }, { value: "flexible", label: "Flexible Preview" }]} />
-            <p className="text-xs text-[#9a948c]">{l.mode === "uniform" ? "All cards share the same aspect ratio below." : "Each image uses its own aspect ratio in a balanced masonry layout."}</p>
+            <p className="text-xs text-[#9a948c]">{l.autoFill ? "Images keep their own proportions and automatically fill the masonry layout." : l.mode === "uniform" ? "All cards share the same aspect ratio below." : "Each image uses its own aspect ratio in a balanced masonry layout."}</p>
             <Toggle label="Automatically fill empty spaces (Masonry)" checked={l.autoFill} onChange={(v) => set({ autoFill: v })} />
-            {l.mode === "uniform" && (
+            {l.mode === "uniform" && !l.autoFill && (
               <>
                 <Select label="Card image aspect ratio" value={l.aspect} onChange={(v) => set({ aspect: v })} options={["16:9", "4:3", "3:2", "1:1", "4:5", "2:3", "1:1.414", "21:9"]} />
                 <Slider label="Fixed frame height (0 = use ratio)" value={l.frameHeight} min={0} max={700} step={10} unit="px" onChange={(v) => set({ frameHeight: v })} />
