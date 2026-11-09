@@ -10,7 +10,7 @@ export function normalizeProject(row: typeof projects.$inferSelect): Project {
   const gallery = Array.isArray(row.gallery) ? row.gallery : [];
   return {
     id: row.id,
-    title: row.title,
+    title: row.title === "Untitled project" ? "" : row.title,
     slug: row.slug,
     categoryId: row.categoryId,
     summary: row.summary,
