@@ -80,7 +80,8 @@ export function PortfolioGrid({ projects, categories, layout, tone = "light", sh
   );
   const list = active === "all" ? projects : projects.filter((p) => p.categoryId === active);
   const catName = (id: number | null) => categories.find((c) => c.id === id)?.name ?? "Creative Work";
-  const uniform = layout.mode === "uniform";
+  const autoFill = layout.autoFill !== false;
+  const uniform = layout.mode === "uniform" && !autoFill;
   const forceFit = layout.crop === "cover" || layout.crop === "contain" ? layout.crop : undefined;
   const dark = tone === "dark";
 
@@ -119,7 +120,7 @@ export function PortfolioGrid({ projects, categories, layout, tone = "light", sh
       ) : (
         <div
           className="p-grid"
-          data-mode={layout.mode}
+          data-mode={autoFill ? "flexible" : layout.mode}
           data-hover={layout.hover}
           style={
             {
