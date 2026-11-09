@@ -54,9 +54,37 @@ const blankProject = (): Project => ({
 /* =============== Projects =============== */
 export function ProjectsModule({ projects, setProjects, categories }: Shared) {
   const [editing, setEditing] = useState<Project | null>(null);
+  const [bulkCategory, setBulkCategory] = useState("");
+  const [bulkUploading, setBulkUploading] = useState(false);
   const toast = useToast();
   const catName = (id: number | null) => categories.find((c) => c.id === id)?.name ?? "Uncategorized";
 
+  const bulkUpload = async (files: FileList | null) => {
+    if (!files?.length || bulkUploading) return;
+    const selectedFiles = Array.from(files).filter((file) => file.type.startsWith("image/"));
+    if (!selectedFiles.length) { toast("error", "Please select image files."); return; }
+    setBulkUploading(true);
+    const created: Project[] = [];
+    let failed = 0;
+    try {
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        try {
+          const uploaded = await uploadFile(file);
+          const preset = categories.find((c) => String(c.id) === bulkCategory)?.preset || "16:9";
+          const image = newImage(uploaded.url, preset, uploaded.natural);
+          const base = slugify(file.name.replace(/\.[^.]+$/, "")) || "project";
+          const response = await api<{ data: Project }>("/api/admin/projects", {
+            method: "POST",
+            json: { title: "", slug: `${base}-${Date.now().toString(36)}-${i + 1}`, categoryId: bulkCategory ? Number(bulkCategory) : null, summary: "", description: "", details: [], tags: [], cover: image, gallery: [], featured: false, published: true, isDemo: false },
+          });
+          created.push(response.data);
+        } catch (error) { failed++; toast("error", `${file.name}: ${(error as Error).message}`); }
+      }
+      if (created.length) setProjects([...projects, ...created]);
+      toast(failed ? "error" : "success", `Bulk upload finished: ${created.length} project(s) created, ${failed} failed.`);
+    } finally { setBulkUploading(false); }
+  };
   const reorder = async (next: Project[]) => {
     const prev = projects;
     setProjects(next);
@@ -112,6 +140,19 @@ export function ProjectsModule({ projects, setProjects, categories }: Shared) {
         desc="Drag rows (or use the arrows) to reorder. Order is saved automatically."
         actions={<button className="a-btn a-btn-primary" onClick={() => setEditing(blankProject())}>+ New project</button>}
       />
+      <Panel title="Bulk upload projects" desc="Select multiple images. Each image becomes a separate published project with no title or description. You can add text later by editing each project.">
+        <div className="flex flex-wrap items-center gap-3">
+          <select className="a-input min-w-48" value={bulkCategory} onChange={(e) => setBulkCategory(e.target.value)} aria-label="Bulk upload category">
+            <option value="">Uncategorized</option>
+            {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+          </select>
+          <label className={`a-btn a-btn-primary cursor-pointer ${bulkUploading ? "pointer-events-none opacity-60" : ""}`}>
+            {bulkUploading ? "Uploading images…" : "Choose multiple images"}
+            <input type="file" accept="image/*" multiple disabled={bulkUploading} className="sr-only" onChange={(e) => { void bulkUpload(e.target.files); e.currentTarget.value = ""; }} />
+          </label>
+        </div>
+        <p className="mt-2 text-xs text-[#9a948c]">Uploads run one by one to reduce timeout risk. Keep this page open until finished.</p>
+      </Panel>
       {projects.length === 0 ? (
         <Panel><p className="text-sm text-[#7a746c]">No projects yet. Create your first one.</p></Panel>
       ) : (
@@ -170,33 +211,6 @@ function ProjectEditor({ initial, categories, onCancel, onSaved }: { initial: Pr
           setP((x) => ({ ...x, cover: img }));
           setSelected("cover");
 
-          // Generate metadata for the cover and fill only fields the user has not entered.
-          if (["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"].includes(f.type)) {
-            try {
-              const result = await api<{ data: { title: string; description: string; category: string } }>(
-                "/api/admin/r2-media/metadata",
-                { method: "POST", json: { url: r.url, mimeType: f.type } },
-              );
-              const generated = result.data;
-              const matchingCategory = categories.find(
-                (category) => category.name.trim().toLowerCase() === generated.category.trim().toLowerCase(),
-              );
-              setP((current) => {
-                const title = current.title.trim() ? current.title : generated.title;
-                return {
-                  ...current,
-                  title,
-                  slug: current.slug.trim() ? current.slug : slugify(title),
-                  summary: current.summary.trim() ? current.summary : generated.description,
-                  description: current.description.trim() ? current.description : generated.description,
-                  categoryId: current.categoryId ?? matchingCategory?.id ?? null,
-                };
-              });
-              toast("success", "AI title and description added to the project form. Review them before saving.");
-            } catch (metadataError) {
-              toast("error", `Cover uploaded, but AI metadata failed: ${(metadataError as Error).message}`);
-            }
-          }
         } else {
           setP((x) => ({ ...x, gallery: [...x.gallery, img] }));
           setSelected(img.id);
