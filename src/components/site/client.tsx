@@ -136,7 +136,7 @@ export function PortfolioGrid({ projects, categories, layout, tone = "light", sh
               href={`/work/${p.slug}`}
               className="p-card group page-in"
               data-title={layout.titlePosition}
-              aria-label={`${p.title} — ${catName(p.categoryId)}`}
+              aria-label={p.title ? `${p.title} — ${catName(p.categoryId)}` : catName(p.categoryId)}
             >
               <div className="relative">
                 <ProjectImageView
@@ -152,7 +152,7 @@ export function PortfolioGrid({ projects, categories, layout, tone = "light", sh
                     Concept
                   </span>
                 )}
-                {layout.titlePosition !== "below" && (
+                {p.title && layout.titlePosition !== "below" && (
                   <div className="p-overlay text-white" style={{ borderRadius: layout.radius }}>
                     <span className="eyebrow text-white/70">{catName(p.categoryId)}</span>
                     <span className="t-title mt-1">{p.title}</span>
@@ -162,7 +162,7 @@ export function PortfolioGrid({ projects, categories, layout, tone = "light", sh
               {layout.titlePosition === "below" && (
                 <div className="mt-4 flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <div className={`t-title truncate ${dark ? "text-white" : "text-[#080808]"}`}>{p.title}</div>
+                    {p.title && <div className={`t-title truncate ${dark ? "text-white" : "text-[#080808]"}`}>{p.title}</div>}
                     <div className={`t-caption mt-1 ${dark ? "text-white/55" : "text-black/55"}`}>{catName(p.categoryId)}</div>
                   </div>
                   <span
