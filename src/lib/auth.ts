@@ -12,9 +12,12 @@ let warned = false;
 function secret(): string {
   const s = process.env.SESSION_SECRET;
   if (s && s.length >= 16) return s;
-  if (process.env.NODE_ENV === "production" && !warned) {
-    warned = true;
-    console.warn("[upflit] SESSION_SECRET is missing or too short. Set it in production!");
+  if (process.env.NODE_ENV === "production") {
+    if (!warned) {
+      warned = true;
+      console.error("[upflit] SESSION_SECRET is missing or too short. Admin authentication is disabled until it is configured.");
+    }
+    throw new Error("SESSION_SECRET must be configured with at least 16 characters in production.");
   }
   return "upflit-dev-secret-change-me-please";
 }
@@ -75,11 +78,13 @@ export async function ensureAdmin() {
   const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(adminUsers);
   if (count > 0) return;
   const email = (process.env.ADMIN_EMAIL || "admin@upflit.com").toLowerCase().trim();
-  const password = process.env.ADMIN_PASSWORD || "upflit-admin";
-  if (!process.env.ADMIN_PASSWORD) {
-    console.warn(
-      `[upflit] Created default admin ${email} / upflit-admin — change it in Admin → Account & Security.`,
-    );
+  const configuredPassword = process.env.ADMIN_PASSWORD;
+  if (!configuredPassword && process.env.NODE_ENV === "production") {
+    throw new Error("ADMIN_PASSWORD must be configured before creating the first production admin account.");
+  }
+  const password = configuredPassword || "upflit-admin";
+  if (!configuredPassword) {
+    console.warn("[upflit] Created a development admin with the default password. Change it before deployment.");
   }
   await db.insert(adminUsers).values({ email, passwordHash: hashPassword(password) }).onConflictDoNothing();
 }
