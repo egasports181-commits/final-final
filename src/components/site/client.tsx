@@ -74,6 +74,26 @@ type GridProps = {
 
 export function PortfolioGrid({ projects, categories, layout, tone = "light", showFilters = true }: GridProps) {
   const [active, setActive] = useState<number | "all">("all");
+  const [visibleCount, setVisibleCount] = useState(8);
+
+  useEffect(() => {
+    const updateVisibleCount = () => {
+      if (window.innerWidth >= 1100) setVisibleCount(Number.MAX_SAFE_INTEGER);
+      else if (window.innerWidth < 720) setVisibleCount(6);
+      else setVisibleCount(8);
+    };
+    updateVisibleCount();
+    window.addEventListener("resize", updateVisibleCount);
+    return () => window.removeEventListener("resize", updateVisibleCount);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.innerWidth >= 1100) setVisibleCount(Number.MAX_SAFE_INTEGER);
+    else if (window.innerWidth < 720) setVisibleCount(6);
+    else setVisibleCount(8);
+  }, [active]);
+
   const usedCats = useMemo(
     () => categories.filter((c) => projects.some((p) => p.categoryId === c.id)),
     [categories, projects],
@@ -131,7 +151,7 @@ export function PortfolioGrid({ projects, categories, layout, tone = "light", sh
             } as React.CSSProperties
           }
         >
-          {list.map((p) => (
+          {list.slice(0, visibleCount).map((p) => (
             <Link
               key={p.id}
               href={`/work/${p.slug}`}
@@ -178,6 +198,19 @@ export function PortfolioGrid({ projects, categories, layout, tone = "light", sh
             </Link>
           ))}
         </div>
+      )}
+      {list.length > visibleCount && (
+        <button
+          type="button"
+          className="btn btn-outline-dark mx-auto mt-10"
+          onClick={() => {
+            const increment = window.innerWidth < 720 ? 6 : 8;
+            setVisibleCount((count) => count + increment);
+          }}
+        >
+          Load more
+          <span aria-hidden="true">↓</span>
+        </button>
       )}
     </div>
   );
