@@ -209,7 +209,6 @@ function ProjectEditor({ initial, categories, onCancel, onSaved }: { initial: Pr
   };
 
   const save = async () => {
-    if (!p.title.trim()) return toast("error", "Please enter a project title.");
     setSaving(true);
     try {
       const res = await api<{ data: Project }>(isNew ? "/api/admin/projects" : `/api/admin/projects/${p.id}`, {
@@ -218,7 +217,7 @@ function ProjectEditor({ initial, categories, onCancel, onSaved }: { initial: Pr
       });
       setP(res.data);
       onSaved(res.data, isNew);
-      toast("success", `"${res.data.title}" saved. Live at /work/${res.data.slug}`);
+      toast("success", `Project saved as "${res.data.title}". Live at /work/${res.data.slug}`);
     } catch (e) {
       toast("error", `Not saved: ${(e as Error).message}`);
     } finally {
@@ -246,7 +245,7 @@ function ProjectEditor({ initial, categories, onCancel, onSaved }: { initial: Pr
       <div className="grid gap-5">
         <Panel title="Project details">
           <div className="grid gap-4 md:grid-cols-2">
-            <TextField label="Title *" value={p.title} onChange={(v) => upd({ title: v, slug: isNew || !p.slug ? slugify(v) : p.slug })} maxLength={160} />
+            <TextField label="Title (optional)" value={p.title} onChange={(v) => upd({ title: v, slug: isNew || !p.slug ? slugify(v) : p.slug })} maxLength={160} />
             <TextField label="URL slug" value={p.slug} onChange={(v) => upd({ slug: v })} hint={`/work/${slugify(p.slug || p.title || "project")}`} />
             <Select
               label="Category"
