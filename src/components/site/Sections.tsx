@@ -137,7 +137,7 @@ export function PortfolioSection({ cfg, index, s, projects, categories }: { cfg:
     <section id="portfolio" className="section-y bg-[var(--c-light)] text-[#080808]">
       <div className="container-x">
         <SectionHead cfg={cfg} index={index} tone="light" />
-        <div className="reveal">
+        <div>
           <PortfolioGrid projects={projects} categories={categories} layout={s.portfolio} showFilters={s.portfolio.showFilters} tone="light" />
         </div>
       </div>
