@@ -45,7 +45,7 @@ export default async function ProjectPage({ params }: Props) {
                 <span className="pill">{cat?.name ?? "Creative Work"}</span>
                 {p.isDemo && <span className="pill bg-black/25">Concept / demo project</span>}
               </div>
-              <h1 className="t-hero mt-6 anim-rise" style={{ fontSize: "clamp(2.6rem, 7vw, 6.5rem)" }}>{p.title}</h1>
+              {p.title && <h1 className="t-hero mt-6 anim-rise" style={{ fontSize: "clamp(2.6rem, 7vw, 6.5rem)" }}>{p.title}</h1>}
             </div>
             {p.summary && <p className="t-lead text-white/90 anim-rise" style={{ ["--d" as string]: ".15s" }}>{p.summary}</p>}
           </div>
@@ -102,7 +102,7 @@ export default async function ProjectPage({ params }: Props) {
           <div className="container-x flex items-center justify-between gap-6">
             <div className="min-w-0">
               <p className="eyebrow text-black/50">Next project</p>
-              <p className="t-section mt-3 truncate transition group-hover:text-[var(--c-primary)]">{next.title}</p>
+              {next.title && <p className="t-section mt-3 truncate transition group-hover:text-[var(--c-primary)]">{next.title}</p>}
             </div>
             <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#080808] text-white transition group-hover:rotate-45 group-hover:bg-[var(--c-primary)] md:h-24 md:w-24">
               <ArrowUpRight size={28} />
